@@ -763,7 +763,15 @@ createBoundary(0, -WORLD_LIMIT, WORLD_SIZE, 2);
 createBoundary(0, WORLD_LIMIT, WORLD_SIZE, 2);
 createBoundary(-WORLD_LIMIT, 0, 2, WORLD_SIZE);
 createBoundary(WORLD_LIMIT, 0, 2, WORLD_SIZE);
+// =====================================
+// STAGE 6 - NPC SYSTEM
+// =====================================
 
+const npcSystem = new NPCSystems(
+    scene,
+    world,
+    container
+);
 // =====================================
 // PLAYER
 // =====================================
@@ -772,6 +780,7 @@ const player = createCharacter();
 scene.add(player);
 
 vehicleSystem.playerReference = player;
+npcSystem.playerReference = player;
 // =====================================
 // CHARACTER CUSTOMISATION
 // =====================================
@@ -1216,7 +1225,11 @@ const direction = new THREE.Vector2();
 function animate() {
 
 requestAnimationFrame(animate);
+
 const delta = Math.min(clock.getDelta(), 0.05);
+
+// Update pedestrians
+npcSystem.update(delta);
 let moveX = joystickX;
 let moveZ = joystickY;
 if (keys["w"] || keys["arrowup"]) moveZ -= 1;
