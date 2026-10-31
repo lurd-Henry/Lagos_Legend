@@ -1214,44 +1214,38 @@ const direction = new THREE.Vector2();
 
 function animate() {
 
-    requestAnimationFrame(animate);
-
-    const delta = Math.min(clock.getDelta(), 0.05);
-
-    let moveX = joystickX;
-    let moveZ = joystickY;
-
-    if (keys["w"] || keys["arrowup"]) moveZ -= 1;
-    if (keys["s"] || keys["arrowdown"]) moveZ += 1;
-    if (keys["a"] || keys["arrowleft"]) moveX -= 1;
-    if (keys["d"] || keys["arrowright"]) moveX += 1;
-
-    direction.set(moveX, moveZ);
-
-    if (direction.length() > 1) {
-        direction.normalize();
-    }
-
-    const moving = direction.length() > 0.05;
+requestAnimationFrame(animate);
+const delta = Math.min(clock.getDelta(), 0.05);
+let moveX = joystickX;
+let moveZ = joystickY;
+if (keys["w"] || keys["arrowup"]) moveZ -= 1;
+if (keys["s"] || keys["arrowdown"]) moveZ += 1;
+if (keys["a"] || keys["arrowleft"]) moveX -= 1;
+if (keys["d"] || keys["arrowright"]) moveX += 1;
+direction.set(moveX, moveZ);
+// Sprint lock automatically moves the player forward.
+if (!vehicleSystem.isDriving && sprintLocked) {
+    direction.set(0, -1);
+}
+if (direction.length() > 1) {
+    direction.normalize();
+}
+const moving = direction.length() > 0.05;
 // =====================================
 // WALKING AND DRIVING
 // =====================================
-
 if (vehicleSystem.isDriving) {
-
-    // Steering comes ONLY from the joystick.
     const steering = {
         x: joystickX
     };
-
-    // Keyboard support for PC.
-    const gas = accelerating || keys["w"] || keys["arrowup"];
-
+    const gas =
+        accelerating ||
+        keys["w"] ||
+        keys["arrowup"];
     const brake =
         braking ||
         keys["s"] ||
         keys["arrowdown"];
-
     vehicleSystem.update(
         player,
         steering,
@@ -1259,40 +1253,27 @@ if (vehicleSystem.isDriving) {
         brake,
         delta
     );
-
     walkingControls.style.display = "none";
     vehicleControls.style.display = "flex";
-
 } else {
-
     vehicleControls.style.display = "none";
     walkingControls.style.display = "block";
-
-    const moving = direction.length() > 0.05;
-
     const running =
         sprintLocked ||
         sprintToggled ||
         !!keys["shift"];
-
     const speed = running ? 12 : 7;
-
     if (moving) {
-
         const forwardX = -Math.sin(cameraYaw);
         const forwardZ = -Math.cos(cameraYaw);
-
         const rightX = Math.cos(cameraYaw);
         const rightZ = -Math.sin(cameraYaw);
-
         const worldX =
             rightX * direction.x +
             forwardX * -direction.y;
-
         const worldZ =
             rightZ * direction.x +
             forwardZ * -direction.y;
-
         world.movePlayer(
             player,
             worldX,
@@ -1300,54 +1281,39 @@ if (vehicleSystem.isDriving) {
             speed,
             delta
         );
-
         player.rotation.y = Math.atan2(worldX, worldZ);
-
     }
-
-    // Sprint animation state
-    player.userData.animate(
-        clock.elapsedTime,
-        moving || sprintLocked,
-        running
-    );
-
-}
-
-    // Keep player inside the playable world
-    player.position.x = THREE.MathUtils.clamp(
-        player.position.x,
-        -WORLD_LIMIT + 5,
-        WORLD_LIMIT - 5
-    );
-
-    player.position.z = THREE.MathUtils.clamp(
-        player.position.z,
-        -WORLD_LIMIT + 5,
-        WORLD_LIMIT - 5
-    );
-
     player.userData.animate(
         clock.elapsedTime,
         moving,
         running
     );
-
-    updateCamera();
-
-    coordinates.textContent =
-        `X: ${player.position.x.toFixed(1)} | Z: ${player.position.z.toFixed(1)}`;
-
-    if (vehicleSystem.isDriving) {
-
-    world.button.style.display = "none";
-
-} else {
-
-    world.updateInteractions(player);
-
 }
-    renderer.render(scene, camera);
+// =====================================
+// WORLD BOUNDARIES
+// =====================================
+player.position.x = THREE.MathUtils.clamp(
+    player.position.x,
+    -WORLD_LIMIT + 5,
+    WORLD_LIMIT - 5
+);
+player.position.z = THREE.MathUtils.clamp(
+    player.position.z,
+    -WORLD_LIMIT + 5,
+    WORLD_LIMIT - 5
+);
+// =====================================
+// CAMERA AND HUD
+// =====================================
+updateCamera();
+coordinates.textContent =
+    `X: ${player.position.x.toFixed(1)} | Z: ${player.position.z.toFixed(1)}`;
+if (vehicleSystem.isDriving) {
+    world.button.style.display = "none";
+} else {
+    world.updateInteractions(player);
+}
+renderer.render(scene, camera);
 
 }
 
