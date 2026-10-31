@@ -173,14 +173,23 @@ createVehicle(type, x, z, color) {
     };
     this.vehicles.push(vehicleData);
     // Register vehicle interaction
-    this.world.addInteractable({
-        x,
-        z,
-        buttonText: `ENTER ${type.toUpperCase()}`,
-        action: () => {
-            this.enterVehicle(vehicleData);
-        }
-    });
+    const vehicleInteraction = {
+    x,
+    z,
+    type: "vehicle",
+    buttonText: `ENTER ${type.toUpperCase()}`,
+    action: () => this.enterVehicle(vehicleData)
+};
+
+vehicleData.interactable = vehicleInteraction;
+
+this.world.addInteractable(vehicleInteraction);
+}
+    if (vehicleData.interactable) {
+
+    vehicleData.interactable.x = vehicleData.object.position.x;
+    vehicleData.interactable.z = vehicleData.object.position.z;
+
 }
 // =====================================
 // CREATE CITY VEHICLES
