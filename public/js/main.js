@@ -805,11 +805,7 @@ createBoundary(WORLD_LIMIT, 0, 2, WORLD_SIZE);
 // STAGE 6 - NPC SYSTEM
 // =====================================
 
-const npcSystem = new NPCSystems(
-    scene,
-    world,
-    container
-);
+
 // =====================================
 // PLAYER
 // =====================================
