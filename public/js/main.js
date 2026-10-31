@@ -813,22 +813,6 @@ createBoundary(WORLD_LIMIT, 0, 2, WORLD_SIZE);
 const player = createCharacter();
 scene.add(player);
 
-vehicleSystem.playerReference = player;
-npcSystem.playerReference = player;
-const trafficSystem = new TrafficSystems(scene, world);
-
-const atmosphereSystem = new AtmosphereSystems(
-    scene,
-    container,
-    {
-        ambientLight: hemisphereLight,
-        sunlight: sunlight,
-        clockElement: coordinates,
-        streetlightMaterials: streetlightMaterials
-    }
-);
-
-trafficSystem.playerReference = player;
 // =====================================
 // CHARACTER CUSTOMISATION
 // =====================================
