@@ -397,6 +397,16 @@ export class NPCSystems {
 
                 pauseTimer: Math.random() * 2,
 
+                radius: 0.55,
+
+knockdownTimer: 0,
+
+hitCooldown: 0,
+
+knockbackX: 0,
+knockbackZ: 0,
+
+isKnockedDown: false,
                 interactable: null
 
             };
@@ -458,7 +468,110 @@ console.log("NPC positions:", this.npcs.map(npc => ({
         }
 
     }
+// =====================================
+// VEHICLE IMPACT ON PEDESTRIANS
+// =====================================
 
+applyVehicleImpact(
+    vehicleData,
+    oldX,
+    oldZ,
+    nextX,
+    nextZ,
+    speed
+) {
+
+    if (!vehicleData || Math.abs(speed) < 3) {
+        return false;
+    }
+
+    const vehicle = vehicleData.object;
+
+    const yaw = vehicle.rotation.y;
+
+    let hitSomething = false;
+
+    for (const npc of this.npcs) {
+
+        if (npc.hitCooldown > 0) continue;
+
+        const npcX = npc.object.position.x;
+        const npcZ = npc.object.position.z;
+
+        // Check the movement path, not just the final position.
+        const steps = 3;
+
+        let hit = false;
+
+        for (let i = 0; i <= steps; i++) {
+
+            const t = i / steps;
+
+            const carX = oldX + (nextX - oldX) * t;
+            const carZ = oldZ + (nextZ - oldZ) * t;
+
+            const dx = npcX - carX;
+            const dz = npcZ - carZ;
+
+            // Convert pedestrian position to car-local coordinates.
+            const localX =
+                dx * Math.cos(yaw) -
+                dz * Math.sin(yaw);
+
+            const localZ =
+                dx * Math.sin(yaw) +
+                dz * Math.cos(yaw);
+
+            if (
+                Math.abs(localX) <
+                    vehicleData.width / 2 + 0.55 &&
+                Math.abs(localZ) <
+                    vehicleData.length / 2 + 0.45
+            ) {
+
+                hit = true;
+                break;
+
+            }
+
+        }
+
+        if (!hit) continue;
+
+        const directionX = nextX - oldX;
+        const directionZ = nextZ - oldZ;
+
+        const magnitude = Math.hypot(
+            directionX,
+            directionZ
+        ) || 1;
+
+        npc.knockbackX =
+            directionX / magnitude *
+            (2 + Math.abs(speed) * 0.25);
+
+        npc.knockbackZ =
+            directionZ / magnitude *
+            (2 + Math.abs(speed) * 0.25);
+
+        npc.knockdownTimer = 2.5;
+        npc.hitCooldown = 3;
+
+        npc.isKnockedDown = true;
+
+        npc.object.rotation.z = 1.2;
+
+        npc.object.position.y = 0.1;
+
+        npc.pauseTimer = 0;
+
+        hitSomething = true;
+
+    }
+
+    return hitSomething;
+
+}
     // =====================================
     // NPC ANIMATION
     // =====================================
@@ -487,66 +600,126 @@ console.log("NPC positions:", this.npcs.map(npc => ({
 
     updateNPC(npcData, delta, time) {
 
-        if (npcData.pauseTimer > 0) {
+    const object = npcData.object;
 
-            npcData.pauseTimer -= delta;
+    if (npcData.hitCooldown > 0) {
+        npcData.hitCooldown -= delta;
+    }
 
-            this.animateNPC(npcData, time, false);
+    // =====================================
+    // KNOCKDOWN / RECOVERY
+    // =====================================
 
-            return;
+    if (npcData.knockdownTimer > 0) {
 
-        }
+        npcData.knockdownTimer -= delta;
 
-        const object = npcData.object;
+        const nextX =
+            object.position.x + npcData.knockbackX * delta;
 
-        let nextX = object.position.x;
-        let nextZ = object.position.z;
+        const nextZ =
+            object.position.z + npcData.knockbackZ * delta;
 
-        const movement =
-            npcData.direction * npcData.speed * delta;
+        if (!this.world.collides(nextX, nextZ, 0.45)) {
 
-        if (npcData.axis === "z") {
-
-            nextZ += movement;
-
-        } else {
-
-            nextX += movement;
-
-        }
-
-        // Turn around at the edge of the district.
-
-        if (
-            Math.abs(nextX) > 245 ||
-            Math.abs(nextZ) > 245 ||
-            this.world.collides(nextX, nextZ)
-        ) {
-
-            npcData.direction *= -1;
-
-            npcData.pauseTimer = 0.5 + Math.random();
-
-            this.updateFacing(npcData);
-
-            this.animateNPC(npcData, time, false);
-
-            return;
+            object.position.x = nextX;
+            object.position.z = nextZ;
 
         }
 
-        object.position.x = nextX;
-        object.position.z = nextZ;
+        const friction = Math.exp(-3 * delta);
 
-        // Update interaction position as NPC moves.
+        npcData.knockbackX *= friction;
+        npcData.knockbackZ *= friction;
 
-        npcData.interactable.x = nextX;
-        npcData.interactable.z = nextZ;
+        object.rotation.z = THREE.MathUtils.lerp(
+            object.rotation.z,
+            1.2,
+            Math.min(1, delta * 8)
+        );
 
-        this.animateNPC(npcData, time, true);
+        object.userData.legs[0].rotation.x = 0.5;
+        object.userData.legs[1].rotation.x = -0.5;
+
+        object.userData.arms[0].rotation.x = -1;
+        object.userData.arms[1].rotation.x = -1;
+
+        npcData.interactable.x = object.position.x;
+        npcData.interactable.z = object.position.z;
+
+        return;
 
     }
 
+    // Recover from impact
+    if (npcData.isKnockedDown) {
+
+        npcData.isKnockedDown = false;
+
+        object.rotation.z = 0;
+        object.position.y = 0;
+
+        npcData.pauseTimer = 1.2;
+
+    }
+
+    // =====================================
+    // NORMAL WALKING
+    // =====================================
+
+    if (npcData.pauseTimer > 0) {
+
+        npcData.pauseTimer -= delta;
+
+        this.animateNPC(npcData, time, false);
+
+        return;
+
+    }
+
+    let nextX = object.position.x;
+    let nextZ = object.position.z;
+
+    const movement =
+        npcData.direction * npcData.speed * delta;
+
+    if (npcData.axis === "z") {
+        nextZ += movement;
+    } else {
+        nextX += movement;
+    }
+
+    // Give pedestrians more clearance from buildings.
+    const blocked =
+        this.world.collides(nextX, nextZ, 0.55);
+
+    if (
+        Math.abs(nextX) > 245 ||
+        Math.abs(nextZ) > 245 ||
+        blocked
+    ) {
+
+        npcData.direction *= -1;
+
+        npcData.pauseTimer = 0.5 + Math.random();
+
+        this.updateFacing(npcData);
+
+        this.animateNPC(npcData, time, false);
+
+        return;
+
+    }
+
+    object.position.x = nextX;
+    object.position.z = nextZ;
+
+    npcData.interactable.x = nextX;
+    npcData.interactable.z = nextZ;
+
+    this.animateNPC(npcData, time, true);
+
+}
     // =====================================
     // UPDATE ALL PEDESTRIANS
     // =====================================
