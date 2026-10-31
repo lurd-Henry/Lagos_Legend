@@ -243,85 +243,131 @@ exitVehicle(player) {
 // =====================================
 // DRIVING SYSTEM
 // =====================================
-update(player, keys, joystickX, joystickY, delta) {
+update(player, steering, gas, brake, delta) {
+
     if (!this.isDriving || !this.currentVehicle) return;
+
     const vehicleData = this.currentVehicle;
     const vehicle = vehicleData.object;
+
     player.visible = false;
-    // Keep player position aligned with vehicle.
+
+    // Keep player aligned with vehicle.
     player.position.copy(vehicle.position);
-    const forward =
-        keys["w"] ||
-        keys["arrowup"] ||
-        joystickY < -0.15;
-    const backward =
-        keys["s"] ||
-        keys["arrowdown"] ||
-        joystickY > 0.15;
-    const left =
-        keys["a"] ||
-        keys["arrowleft"] ||
-        joystickX < -0.15;
-    const right =
-        keys["d"] ||
-        keys["arrowright"] ||
-        joystickX > 0.15;
-    const running = keys["shift"];
-    const acceleration = running
-        ? this.acceleration * 1.35
-        : this.acceleration;
-    // Acceleration
-    if (forward) {
-        this.speed += acceleration * delta;
+
+    // =====================================
+    // ACCELERATION AND BRAKING
+    // =====================================
+
+    const acceleration = this.acceleration;
+    const brakingPower = this.braking;
+
+    if (gas) {
+
+        // If reversing, slow down before moving forward.
+        if (this.speed < 0) {
+            this.speed = Math.min(
+                0,
+                this.speed + brakingPower * delta
+            );
+        } else {
+            this.speed += acceleration * delta;
+        }
+
+    } else if (brake) {
+
+        // First slow down.
+        if (this.speed > 0) {
+
+            this.speed = Math.max(
+                0,
+                this.speed - brakingPower * delta
+            );
+
+        } else {
+
+            // Once stopped, holding brake activates reverse.
+            this.speed -= acceleration * 0.6 * delta;
+
+        }
+
+    } else {
+
+        // Natural friction when neither button is pressed.
+        if (this.speed > 0) {
+            this.speed = Math.max(
+                0,
+                this.speed - 4 * delta
+            );
+        } else if (this.speed < 0) {
+            this.speed = Math.min(
+                0,
+                this.speed + 4 * delta
+            );
+        }
+
     }
-    // Reverse
-    if (backward) {
-        this.speed -= this.braking * delta;
-    }
-    // Natural slowdown
-    if (!forward && !backward) {
-        this.speed *= 0.985;
-    }
+
+    // Limit vehicle speed.
     this.speed = THREE.MathUtils.clamp(
         this.speed,
         -vehicleData.maxSpeed * 0.35,
         vehicleData.maxSpeed
     );
-    // Steering
+
+    // =====================================
+    // STEERING
+    // =====================================
+
+    const steeringX = steering.x || 0;
+
     if (Math.abs(this.speed) > 0.5) {
+
         const steeringDirection = this.speed >= 0 ? 1 : -1;
-        if (left) {
-            vehicle.rotation.y +=
-                this.steeringSpeed * delta * steeringDirection;
-        }
-        if (right) {
-            vehicle.rotation.y -=
-                this.steeringSpeed * delta * steeringDirection;
-        }
+
+        vehicle.rotation.y -=
+            steeringX *
+            this.steeringSpeed *
+            delta *
+            steeringDirection;
+
     }
-    // Vehicle movement
+
+    // =====================================
+    // VEHICLE MOVEMENT
+    // =====================================
+
     const forwardX = Math.sin(vehicle.rotation.y);
     const forwardZ = Math.cos(vehicle.rotation.y);
+
     vehicle.position.x +=
         forwardX * this.speed * delta;
+
     vehicle.position.z +=
         forwardZ * this.speed * delta;
-    // Keep vehicle within playable world
+
+    // Keep vehicle within playable world.
     vehicle.position.x = THREE.MathUtils.clamp(
         vehicle.position.x,
         -255,
         255
     );
+
     vehicle.position.z = THREE.MathUtils.clamp(
         vehicle.position.z,
         -255,
         255
     );
-    // Rotate wheels
+
+    // =====================================
+    // WHEEL ANIMATION
+    // =====================================
+
     vehicleData.wheels.forEach(wheel => {
         wheel.rotation.x += this.speed * delta * 0.8;
     });
-    // Sync character position
+
+    // Keep character aligned with vehicle.
     player.position.copy(vehicle.position);
 }
 // =====================================
