@@ -431,7 +431,11 @@ export class NPCSystems {
             this.npcs.length +
             " PEDESTRIANS CREATED"
         );
-
+console.log("NPCs created:", this.npcs.length);
+console.log("NPC positions:", this.npcs.map(npc => ({
+    x: npc.object.position.x,
+    z: npc.object.position.z
+})));
     }
 
     // =====================================
