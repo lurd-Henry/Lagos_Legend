@@ -746,68 +746,7 @@ handlePlayerCollision(
             vehicle.currentSpeed * delta;
 
     });
-
-}
-}
-        // Slow down or accelerate
-        const desiredSpeed = blocked ? 0 : vehicle.speed;
-
-        vehicle.currentSpeed = THREE.MathUtils.damp(
-            vehicle.currentSpeed,
-            desiredSpeed,
-            3,
-            delta
-        );
-
-        if (distance < 0.8) {
-
-            position.copy(vehicle.target);
-
-            vehicle.axis = vehicle.nextAxis;
-            vehicle.road = vehicle.nextRoad;
-            vehicle.direction = vehicle.nextDirection;
-
-            vehicle.lane = vehicle.axis === "z"
-                ? vehicle.lane
-                : vehicle.direction * 2.5;
-
-            this.chooseNextTarget(vehicle);
-
-            return;
-        }
-
-        const direction = new THREE.Vector3(
-            dx,
-            0,
-            dz
-        ).normalize();
-
-        const movement = vehicle.currentSpeed * delta;
-
-        position.addScaledVector(
-            direction,
-            Math.min(movement, distance)
-        );
-
-        const targetYaw = Math.atan2(
-            direction.x,
-            direction.z
-        );
-
-        let angleDifference =
-            targetYaw - vehicle.object.rotation.y;
-
-        angleDifference = Math.atan2(
-            Math.sin(angleDifference),
-            Math.cos(angleDifference)
-        );
-
-        vehicle.object.rotation.y += angleDifference *
-            Math.min(1, delta * 5);
-
-        vehicle.wheels.forEach(wheel => {
-            wheel.rotation.x += vehicle.currentSpeed * delta;
-        });
+    
     }
 
     update(delta) {
