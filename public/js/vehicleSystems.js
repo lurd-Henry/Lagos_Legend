@@ -240,6 +240,70 @@ exitVehicle(player) {
     this.currentVehicle = null;
     this.speed = 0;
 }
+    // =====================================
+// VEHICLE COLLISION DETECTION
+// =====================================
+
+canVehicleMove(vehicleData, x, z, yaw) {
+
+    const halfWidth = vehicleData.width / 2;
+    const halfLength = vehicleData.length / 2;
+
+    // Calculate the vehicle's rotated bounding box.
+    const extentX =
+        Math.abs(Math.cos(yaw)) * halfWidth +
+        Math.abs(Math.sin(yaw)) * halfLength;
+
+    const extentZ =
+        Math.abs(Math.sin(yaw)) * halfWidth +
+        Math.abs(Math.cos(yaw)) * halfLength;
+
+    // Check buildings, fences, kiosks and other static objects.
+    for (const collider of this.world.colliders) {
+
+        const overlaps =
+            x + extentX > collider.x - collider.width / 2 &&
+            x - extentX < collider.x + collider.width / 2 &&
+            z + extentZ > collider.z - collider.depth / 2 &&
+            z - extentZ < collider.z + collider.depth / 2;
+
+        if (overlaps) {
+            return false;
+        }
+    }
+
+    // Check other vehicles.
+    for (const other of this.vehicles) {
+
+        if (other === vehicleData) continue;
+
+        const otherX = other.object.position.x;
+        const otherZ = other.object.position.z;
+
+        const otherHalfWidth = other.width / 2;
+        const otherHalfLength = other.length / 2;
+
+        const otherExtentX =
+            Math.abs(Math.cos(other.object.rotation.y)) * otherHalfWidth +
+            Math.abs(Math.sin(other.object.rotation.y)) * otherHalfLength;
+
+        const otherExtentZ =
+            Math.abs(Math.sin(other.object.rotation.y)) * otherHalfWidth +
+            Math.abs(Math.cos(other.object.rotation.y)) * otherHalfLength;
+
+        const overlaps =
+            x + extentX > otherX - otherExtentX &&
+            x - extentX < otherX + otherExtentX &&
+            z + extentZ > otherZ - otherExtentZ &&
+            z - extentZ < otherZ + otherExtentZ;
+
+        if (overlaps) {
+            return false;
+        }
+    }
+
+    return true;
+}
 // =====================================
 // DRIVING SYSTEM
 // =====================================
@@ -337,14 +401,56 @@ update(player, steering, gas, brake, delta) {
     // VEHICLE MOVEMENT
     // =====================================
 
-    const forwardX = Math.sin(vehicle.rotation.y);
-    const forwardZ = Math.cos(vehicle.rotation.y);
+    // =====================================
+// VEHICLE MOVEMENT AND COLLISION
+// =====================================
 
-    vehicle.position.x +=
-        forwardX * this.speed * delta;
+const forwardX = Math.sin(vehicle.rotation.y);
+const forwardZ = Math.cos(vehicle.rotation.y);
 
-    vehicle.position.z +=
-        forwardZ * this.speed * delta;
+const nextX =
+    vehicle.position.x +
+    forwardX * this.speed * delta;
+
+const nextZ =
+    vehicle.position.z +
+    forwardZ * this.speed * delta;
+
+// Check X movement independently.
+if (
+    this.canVehicleMove(
+        vehicleData,
+        nextX,
+        vehicle.position.z,
+        vehicle.rotation.y
+    )
+) {
+    vehicle.position.x = nextX;
+}
+
+// Check Z movement independently.
+if (
+    this.canVehicleMove(
+        vehicleData,
+        vehicle.position.x,
+        nextZ,
+        vehicle.rotation.y
+    )
+) {
+    vehicle.position.z = nextZ;
+}
+
+// Stop the vehicle if its movement is blocked.
+if (
+    vehicle.position.x !== nextX ||
+    vehicle.position.z !== nextZ
+) {
+    this.speed *= 0.85;
+
+    if (Math.abs(this.speed) < 0.5) {
+        this.speed = 0;
+    }
+}
 
     // Keep vehicle within playable world.
     vehicle.position.x = THREE.MathUtils.clamp(
