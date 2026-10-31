@@ -748,7 +748,7 @@ handlePlayerCollision(
     });
 
 }
-
+}
         // Slow down or accelerate
         const desiredSpeed = blocked ? 0 : vehicle.speed;
 
