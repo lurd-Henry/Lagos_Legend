@@ -38,15 +38,23 @@ const WORLD_LIMIT = 265;
 
 const scene = new THREE.Scene();
 const world = new WorldSystems(scene);
-const vehicleSystem = new VehicleSystems(scene, world);
-// CONNECT COLLISION SYSTEMS
+const vehicleSystem = new VehicleSystems(scene, const npcSystem = new NPCSystems(scene, world, container);
+npcSystem.playerReference = player;
 
+const vehicleSystem = new VehicleSystems(scene, world);
+vehicleSystem.playerReference = player;
+
+const trafficSystem = new TrafficSystems(scene, world);
+trafficSystem.playerReference = player;
+
+// Connect the systems AFTER creating them
 vehicleSystem.trafficSystem = trafficSystem;
 vehicleSystem.npcSystem = npcSystem;
 
 trafficSystem.playerVehicleSystem = vehicleSystem;
-
 trafficSystem.npcSystem = npcSystem;
+
+const atmosphereSystem = new AtmosphereSystems(scene, container);
 scene.background = new THREE.Color(0x9bcbd8);
 scene.fog = new THREE.Fog(0x9bcbd8, 120, 400);
 
