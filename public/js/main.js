@@ -1305,6 +1305,27 @@ player.position.z = THREE.MathUtils.clamp(
 // =====================================
 // CAMERA AND HUD
 // =====================================
+// =====================================
+// AUTOMATIC VEHICLE CAMERA FOLLOW
+// =====================================
+
+if (vehicleSystem.isDriving && vehicleSystem.currentVehicle) {
+
+    const vehicleYaw =
+        vehicleSystem.currentVehicle.object.rotation.y;
+
+    // Keep camera behind the vehicle.
+    const targetYaw = vehicleYaw - Math.PI;
+
+    // Smoothly rotate camera towards vehicle direction.
+    const angleDifference = Math.atan2(
+        Math.sin(targetYaw - cameraYaw),
+        Math.cos(targetYaw - cameraYaw)
+    );
+
+    cameraYaw += angleDifference * Math.min(1, delta * 3);
+}
+
 updateCamera();
 coordinates.textContent =
     `X: ${player.position.x.toFixed(1)} | Z: ${player.position.z.toFixed(1)}`;
