@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from “three”;
 
 export class VehicleSystems {
 
@@ -15,9 +15,7 @@ constructor(scene, world) {
     this.steeringSpeed = 1.8;
     this.createVehicles();
 }
-// =====================================
-// VEHICLE MATERIALS
-// =====================================
+// MATERIALS
 material(color, metalness = 0) {
     return new THREE.MeshStandardMaterial({
         color,
@@ -25,9 +23,7 @@ material(color, metalness = 0) {
         metalness
     });
 }
-// =====================================
-// CREATE VEHICLE BODY
-// =====================================
+// CREATE VEHICLE
 createVehicle(type, x, z, color) {
     const vehicle = new THREE.Group();
     const paint = this.material(color);
@@ -38,7 +34,6 @@ createVehicle(type, x, z, color) {
         metalness: 0.2
     });
     const metal = this.material(0x777777, 0.6);
-    // Main body dimensions
     let width = 2.4;
     let length = 5;
     let height = 1.5;
@@ -52,14 +47,14 @@ createVehicle(type, x, z, color) {
         length = 6;
         height = 2.3;
     }
-    // Main body
+    // MAIN BODY
     const body = new THREE.Mesh(
         new THREE.BoxGeometry(width, height, length),
         paint
     );
     body.position.y = height / 2 + 0.65;
     vehicle.add(body);
-    // Upper cabin
+    // CABIN
     if (type !== "sedan") {
         const cabin = new THREE.Mesh(
             new THREE.BoxGeometry(
@@ -75,13 +70,8 @@ createVehicle(type, x, z, color) {
             -length * 0.05
         );
         vehicle.add(cabin);
-        // Front windscreen
         const windshield = new THREE.Mesh(
-            new THREE.BoxGeometry(
-                width * 0.82,
-                0.9,
-                0.08
-            ),
+            new THREE.BoxGeometry(width * 0.82, 0.9, 0.08),
             glass
         );
         windshield.position.set(
@@ -91,7 +81,6 @@ createVehicle(type, x, z, color) {
         );
         vehicle.add(windshield);
     } else {
-        // Sedan cabin
         const cabin = new THREE.Mesh(
             new THREE.BoxGeometry(2, 1.15, 2.7),
             glass
@@ -99,14 +88,14 @@ createVehicle(type, x, z, color) {
         cabin.position.set(0, 2.05, -0.2);
         vehicle.add(cabin);
     }
-    // Front bumper
+    // FRONT BUMPER
     const bumper = new THREE.Mesh(
         new THREE.BoxGeometry(width + 0.2, 0.25, 0.2),
         metal
     );
     bumper.position.set(0, 0.8, length / 2);
     vehicle.add(bumper);
-    // Headlights
+    // HEADLIGHTS
     for (const side of [-1, 1]) {
         const light = new THREE.Mesh(
             new THREE.BoxGeometry(0.5, 0.3, 0.12),
@@ -121,7 +110,7 @@ createVehicle(type, x, z, color) {
         );
         vehicle.add(light);
     }
-    // Rear lights
+    // REAR LIGHTS
     for (const side of [-1, 1]) {
         const light = new THREE.Mesh(
             new THREE.BoxGeometry(0.4, 0.3, 0.12),
@@ -136,7 +125,7 @@ createVehicle(type, x, z, color) {
         );
         vehicle.add(light);
     }
-    // Wheels
+    // WHEELS
     const wheels = [];
     const wheelPositions = [
         [-width / 2, -length * 0.3],
@@ -160,81 +149,51 @@ createVehicle(type, x, z, color) {
         wheels.push(wheel);
     });
     vehicle.position.set(x, 0, z);
-    // Give vehicles an initial road-facing direction
     vehicle.rotation.y = Math.PI;
     this.scene.add(vehicle);
     const vehicleData = {
         type,
         object: vehicle,
         wheels,
-        maxSpeed: type === "danfo" ? 19 : type === "keke" ? 15 : 24,
+        maxSpeed: type === "danfo" ? 19 :
+                  type === "keke" ? 15 : 24,
         length,
         width
     };
     this.vehicles.push(vehicleData);
-    // Register vehicle interaction
+    // DYNAMIC VEHICLE INTERACTION
     const vehicleInteraction = {
-    x,
-    z,
-    type: "vehicle",
-    buttonText: `ENTER ${type.toUpperCase()}`,
-    action: () => this.enterVehicle(vehicleData)
-};
-
-vehicleData.interactable = vehicleInteraction;
-
-this.world.addInteractable(vehicleInteraction);
+        x,
+        z,
+        type: "vehicle",
+        buttonText: `ENTER ${type.toUpperCase()}`,
+        action: () => this.enterVehicle(vehicleData)
+    };
+    vehicleData.interactable = vehicleInteraction;
+    this.world.addInteractable(vehicleInteraction);
 }
-    if (vehicleData.interactable) {
-
-    vehicleData.interactable.x = vehicleData.object.position.x;
-    vehicleData.interactable.z = vehicleData.object.position.z;
-
-}
-// =====================================
 // CREATE CITY VEHICLES
-// =====================================
 createVehicles() {
-    this.createVehicle(
-        "danfo",
-        -8,
-        -150,
-        0xe6bd24
-    );
-    this.createVehicle(
-        "keke",
-        8,
-        150,
-        0x168c53
-    );
-    this.createVehicle(
-        "sedan",
-        -8,
-        210,
-        0x263b65
-    );
+    this.createVehicle("danfo", -8, -150, 0xe6bd24);
+    this.createVehicle("keke", 8, 150, 0x168c53);
+    this.createVehicle("sedan", -8, 210, 0x263b65);
 }
-// =====================================
 // ENTER VEHICLE
-// =====================================
 enterVehicle(vehicleData) {
     if (this.isDriving) return;
     this.currentVehicle = vehicleData;
     this.isDriving = true;
     this.speed = 0;
+    if (this.world.hideInteraction) {
+        this.world.hideInteraction();
+    }
     console.log("Entered:", vehicleData.type);
 }
-// =====================================
 // EXIT VEHICLE
-// =====================================
 exitVehicle(player) {
     if (!this.isDriving || !this.currentVehicle) return;
     const vehicle = this.currentVehicle.object;
-    const exitPosition = new THREE.Vector3(
-        2.5,
-        0,
-        0
-    );
+    const exitPosition = new THREE.Vector3(2.5, 0, 0);
     exitPosition.applyAxisAngle(
         new THREE.Vector3(0, 1, 0),
         vehicle.rotation.y
@@ -248,250 +207,189 @@ exitVehicle(player) {
     this.isDriving = false;
     this.currentVehicle = null;
     this.speed = 0;
+    if (this.world.updateInteractions) {
+        this.world.updateInteractions(player);
+    }
 }
-    // =====================================
 // VEHICLE COLLISION DETECTION
-// =====================================
-
 canVehicleMove(vehicleData, x, z, yaw) {
-
-    const halfWidth = vehicleData.width / 2;
-    const halfLength = vehicleData.length / 2;
-
-    // Calculate the vehicle's rotated bounding box.
+    const halfWidth = vehicleData.width / 2 + 0.15;
+    const halfLength = vehicleData.length / 2 + 0.15;
     const extentX =
         Math.abs(Math.cos(yaw)) * halfWidth +
         Math.abs(Math.sin(yaw)) * halfLength;
-
     const extentZ =
         Math.abs(Math.sin(yaw)) * halfWidth +
         Math.abs(Math.cos(yaw)) * halfLength;
-
-    // Check buildings, fences, kiosks and other static objects.
+    // BUILDINGS, HOUSES, FENCES AND OTHER STATIC OBJECTS
     for (const collider of this.world.colliders) {
-
         const overlaps =
-            x + extentX > collider.x - collider.width / 2 &&
-            x - extentX < collider.x + collider.width / 2 &&
-            z + extentZ > collider.z - collider.depth / 2 &&
-            z - extentZ < collider.z + collider.depth / 2;
-
+            x + extentX > collider.minX &&
+            x - extentX < collider.maxX &&
+            z + extentZ > collider.minZ &&
+            z - extentZ < collider.maxZ;
         if (overlaps) {
             return false;
         }
     }
-
-    // Check other vehicles.
+    // OTHER VEHICLES
     for (const other of this.vehicles) {
-
         if (other === vehicleData) continue;
-
+        const otherYaw = other.object.rotation.y;
+        const otherHalfWidth = other.width / 2 + 0.15;
+        const otherHalfLength = other.length / 2 + 0.15;
+        const otherExtentX =
+            Math.abs(Math.cos(otherYaw)) * otherHalfWidth +
+            Math.abs(Math.sin(otherYaw)) * otherHalfLength;
+        const otherExtentZ =
+            Math.abs(Math.sin(otherYaw)) * otherHalfWidth +
+            Math.abs(Math.cos(otherYaw)) * otherHalfLength;
         const otherX = other.object.position.x;
         const otherZ = other.object.position.z;
-
-        const otherHalfWidth = other.width / 2;
-        const otherHalfLength = other.length / 2;
-
-        const otherExtentX =
-            Math.abs(Math.cos(other.object.rotation.y)) * otherHalfWidth +
-            Math.abs(Math.sin(other.object.rotation.y)) * otherHalfLength;
-
-        const otherExtentZ =
-            Math.abs(Math.sin(other.object.rotation.y)) * otherHalfWidth +
-            Math.abs(Math.cos(other.object.rotation.y)) * otherHalfLength;
-
         const overlaps =
             x + extentX > otherX - otherExtentX &&
             x - extentX < otherX + otherExtentX &&
             z + extentZ > otherZ - otherExtentZ &&
             z - extentZ < otherZ + otherExtentZ;
-
         if (overlaps) {
             return false;
         }
     }
-
     return true;
 }
-// =====================================
 // DRIVING SYSTEM
-// =====================================
 update(player, steering, gas, brake, delta) {
-
     if (!this.isDriving || !this.currentVehicle) return;
-
     const vehicleData = this.currentVehicle;
     const vehicle = vehicleData.object;
-
     player.visible = false;
-
-    // Keep player aligned with vehicle.
     player.position.copy(vehicle.position);
-
-    // =====================================
     // ACCELERATION AND BRAKING
-    // =====================================
-
-    const acceleration = this.acceleration;
-    const brakingPower = this.braking;
-
     if (gas) {
-
-        // If reversing, slow down before moving forward.
         if (this.speed < 0) {
             this.speed = Math.min(
                 0,
-                this.speed + brakingPower * delta
+                this.speed + this.braking * delta
             );
         } else {
-            this.speed += acceleration * delta;
+            this.speed += this.acceleration * delta;
         }
-
     } else if (brake) {
-
-        // First slow down.
         if (this.speed > 0) {
-
             this.speed = Math.max(
                 0,
-                this.speed - brakingPower * delta
+                this.speed - this.braking * delta
             );
-
         } else {
-
-            // Once stopped, holding brake activates reverse.
-            this.speed -= acceleration * 0.6 * delta;
-
+            this.speed -= this.acceleration * 0.6 * delta;
         }
-
     } else {
-
-        // Natural friction when neither button is pressed.
         if (this.speed > 0) {
-            this.speed = Math.max(
-                0,
-                this.speed - 4 * delta
-            );
+            this.speed = Math.max(0, this.speed - 4 * delta);
         } else if (this.speed < 0) {
-            this.speed = Math.min(
-                0,
-                this.speed + 4 * delta
-            );
+            this.speed = Math.min(0, this.speed + 4 * delta);
         }
-
     }
-
-    // Limit vehicle speed.
     this.speed = THREE.MathUtils.clamp(
         this.speed,
         -vehicleData.maxSpeed * 0.35,
         vehicleData.maxSpeed
     );
-
-    // =====================================
     // STEERING
-    // =====================================
-
     const steeringX = steering.x || 0;
-
+    const oldYaw = vehicle.rotation.y;
+    let newYaw = oldYaw;
     if (Math.abs(this.speed) > 0.5) {
-
         const steeringDirection = this.speed >= 0 ? 1 : -1;
-
-        vehicle.rotation.y -=
+        newYaw -=
             steeringX *
             this.steeringSpeed *
             delta *
             steeringDirection;
-
     }
-
-    // =====================================
-    // VEHICLE MOVEMENT
-    // =====================================
-
-    // =====================================
-// VEHICLE MOVEMENT AND COLLISION
-// =====================================
-
-const forwardX = Math.sin(vehicle.rotation.y);
-const forwardZ = Math.cos(vehicle.rotation.y);
-
-const nextX =
-    vehicle.position.x +
-    forwardX * this.speed * delta;
-
-const nextZ =
-    vehicle.position.z +
-    forwardZ * this.speed * delta;
-
-// Check X movement independently.
-if (
-    this.canVehicleMove(
+    // Do not allow the vehicle to rotate into an obstacle.
+    if (
+        this.canVehicleMove(
+            vehicleData,
+            vehicle.position.x,
+            vehicle.position.z,
+            newYaw
+        )
+    ) {
+        vehicle.rotation.y = newYaw;
+    }
+    // MOVEMENT
+    const forwardX = Math.sin(vehicle.rotation.y);
+    const forwardZ = Math.cos(vehicle.rotation.y);
+    const nextX =
+        vehicle.position.x +
+        forwardX * this.speed * delta;
+    const nextZ =
+        vehicle.position.z +
+        forwardZ * this.speed * delta;
+    const oldX = vehicle.position.x;
+    const oldZ = vehicle.position.z;
+    const canMoveX = this.canVehicleMove(
         vehicleData,
         nextX,
-        vehicle.position.z,
+        oldZ,
         vehicle.rotation.y
-    )
-) {
-    vehicle.position.x = nextX;
-}
-
-// Check Z movement independently.
-if (
-    this.canVehicleMove(
+    );
+    const canMoveZ = this.canVehicleMove(
         vehicleData,
-        vehicle.position.x,
+        oldX,
         nextZ,
         vehicle.rotation.y
-    )
-) {
-    vehicle.position.z = nextZ;
-}
-
-// Stop the vehicle if its movement is blocked.
-if (
-    vehicle.position.x !== nextX ||
-    vehicle.position.z !== nextZ
-) {
-    this.speed *= 0.85;
-
-    if (Math.abs(this.speed) < 0.5) {
+    );
+    // Move only along an available axis.
+    if (canMoveX) {
+        vehicle.position.x = nextX;
+    }
+    if (canMoveZ) {
+        vehicle.position.z = nextZ;
+    }
+    // If blocked in the direction of travel, stop immediately.
+    if (!canMoveX || !canMoveZ) {
         this.speed = 0;
     }
-}
-
-    // Keep vehicle within playable world.
-    vehicle.position.x = THREE.MathUtils.clamp(
+    // WORLD BOUNDARIES
+    const clampedX = THREE.MathUtils.clamp(
         vehicle.position.x,
         -255,
         255
     );
-
-    vehicle.position.z = THREE.MathUtils.clamp(
+    const clampedZ = THREE.MathUtils.clamp(
         vehicle.position.z,
         -255,
         255
     );
-
-    // =====================================
+    if (
+        clampedX !== vehicle.position.x ||
+        clampedZ !== vehicle.position.z
+    ) {
+        this.speed = 0;
+    }
+    vehicle.position.x = clampedX;
+    vehicle.position.z = clampedZ;
+    // UPDATE VEHICLE INTERACTION POSITION
+    if (vehicleData.interactable) {
+        vehicleData.interactable.x = vehicle.position.x;
+        vehicleData.interactable.z = vehicle.position.z;
+    }
     // WHEEL ANIMATION
-    // =====================================
-
     vehicleData.wheels.forEach(wheel => {
         wheel.rotation.x += this.speed * delta * 0.8;
     });
-
-    // Keep character aligned with vehicle.
     player.position.copy(vehicle.position);
 }
-// =====================================
 // INTERACTION WHILE DRIVING
-// =====================================
 updateInteractionButton() {
     if (!this.isDriving || !this.world.button) return;
-    this.world.button.style.display = "block";
-    this.world.button.textContent = "EXIT VEHICLE";
+    this.world.button.style.display = "flex";
+    const icon = this.world.button.querySelector("#interaction-icon");
+    const label = this.world.button.querySelector("#interaction-label");
+    if (icon) icon.textContent = "🚪";
+    if (label) label.textContent = "EXIT";
     this.world.currentInteraction = {
         action: () => {
             this.exitVehicle(this.playerReference);
