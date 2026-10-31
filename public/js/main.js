@@ -285,8 +285,18 @@ function createCityBuilding(x, z, width, depth, height, color) {
     building.add(entrance);
 
     building.position.set(x, 0, z);
-    scene.add(building);
-    world.addCollider(x, z, width, depth);
+scene.add(building);
+
+world.addCollider(x, z, width, depth);
+
+world.addInteractable({
+    x,
+    z: z + depth / 2 + 2,
+    type: "building",
+    action: () => {
+        alert("Building interiors coming soon!");
+    }
+});
 }
 
 // =====================================
@@ -312,7 +322,7 @@ function createHouse(x, z, width, depth, color) {
     const roof = new THREE.Mesh(
         new THREE.ConeGeometry(width * 0.8, 2.5, 4),
         new THREE.MeshStandardMaterial({ color: 0x984b36 })
-    );
+    ); 
 
     roof.position.y = 5;
     roof.rotation.y = Math.PI / 4;
@@ -358,7 +368,16 @@ scene.add(house);
 
 world.addCollider(x, z, width, depth);
 
-return house;
+world.addInteractable({
+    x,
+    z: z + depth / 2 + 2,
+    type: "house",
+    action: () => {
+        alert("House interiors coming soon!");
+    }
+});
+
+return house; 
 
 }
 
@@ -522,7 +541,7 @@ function createKiosk(x, z, color) {
 world.addInteractable({
     x,
     z,
-    buttonText: "OPEN SHOP",
+    type: "shop",
     action: () => {
         alert("Welcome! This shop will be available soon.");
     }
@@ -579,7 +598,7 @@ function createBusStop(x, z) {
 world.addInteractable({
     x,
     z,
-    buttonText: "BUS STOP",
+    type: "bus",
     action: () => {
         alert("Public transport services coming soon!");
     }
@@ -1007,6 +1026,24 @@ const knob = document.getElementById("joystick-knob");
 let joystickX = 0;
 let joystickY = 0;
 let pointerId = null;
+let sprintLocked = false;
+let sprintToggled = false;
+
+// VEHICLE BUTTON STATES
+
+let accelerating = false;
+let braking = false;
+
+// MOBILE HUD
+
+const sprintButton = document.getElementById("sprint-button");
+
+const walkingControls = document.getElementById("walking-controls");
+const vehicleControls = document.getElementById("vehicle-controls");
+
+const accelerateButton = document.getElementById("accelerate-button");
+const brakeButton = document.getElementById("brake-button");
+const exitVehicleButton = document.getElementById("exit-vehicle-button");
 
 function resetJoystick() {
 
@@ -1015,7 +1052,9 @@ function resetJoystick() {
     pointerId = null;
 
     knob.style.transform = "translate(0px, 0px)";
+
 }
+    // SPRINT SYSTEM
 
 function updateJoystick(event) {
 
@@ -1024,7 +1063,7 @@ function updateJoystick(event) {
     let x = event.clientX - (rect.left + rect.width / 2);
     let y = event.clientY - (rect.top + rect.height / 2);
 
-    const max = 35;
+    const max = 40;
 
     const distance = Math.hypot(x, y);
 
@@ -1038,7 +1077,29 @@ function updateJoystick(event) {
     joystickX = x / max;
     joystickY = y / max;
 
+    // Sprint-lock zone
+    if (!vehicleSystem.isDriving) {
+
+        if (joystickY < -0.88 && Math.abs(joystickX) < 0.4) {
+
+            sprintLocked = true;
+
+            // Return the joystick visually to its resting position.
+            resetJoystick();
+
+            return;
+
+        }
+
+        // Pulling backwards cancels sprint lock.
+        if (joystickY > 0.2) {
+            sprintLocked = false;
+        }
+
+    }
+
     knob.style.transform = `translate(${x}px, ${y}px)`;
+
 }
 
 joystick.addEventListener("pointerdown", event => {
@@ -1046,13 +1107,28 @@ joystick.addEventListener("pointerdown", event => {
     if (pointerId !== null) return;
 
     event.preventDefault();
+    if (!vehicleSystem.isDriving) {
+    sprintLocked = false;
+}
 
     pointerId = event.pointerId;
 
     joystick.setPointerCapture(pointerId);
 
     updateJoystick(event);
+});
+// SPRINT TOGGLE
 
+sprintButton.addEventListener("click", () => {
+
+    if (vehicleSystem.isDriving) return;
+
+    sprintToggled = !sprintToggled;
+
+    sprintButton.classList.toggle(
+        "active",
+        sprintToggled
+    );
 });
 
 joystick.addEventListener("pointermove", event => {
@@ -1072,7 +1148,63 @@ joystick.addEventListener("pointerup", event => {
 });
 
 joystick.addEventListener("pointercancel", resetJoystick);
+// HOLD ACCELERATION
 
+function startAccelerating(event) {
+
+    event.preventDefault();
+    accelerating = true;
+
+    accelerateButton.classList.add("active");
+
+}
+
+function stopAccelerating() {
+
+    accelerating = false;
+
+    accelerateButton.classList.remove("active");
+
+}
+
+accelerateButton.addEventListener("pointerdown", startAccelerating);
+accelerateButton.addEventListener("pointerup", stopAccelerating);
+accelerateButton.addEventListener("pointercancel", stopAccelerating);
+accelerateButton.addEventListener("lostpointercapture", stopAccelerating);
+
+// HOLD BRAKE / REVERSE
+
+function startBraking(event) {
+
+    event.preventDefault();
+    braking = true;
+
+    brakeButton.classList.add("active");
+
+}
+
+function stopBraking() {
+
+    braking = false;
+
+    brakeButton.classList.remove("active");
+
+}
+
+brakeButton.addEventListener("pointerdown", startBraking);
+brakeButton.addEventListener("pointerup", stopBraking);
+brakeButton.addEventListener("pointercancel", stopBraking);
+brakeButton.addEventListener("lostpointercapture", stopBraking);
+
+// EXIT VEHICLE
+
+exitVehicleButton.addEventListener("click", () => {
+
+    if (vehicleSystem.isDriving) {
+        vehicleSystem.exitVehicle(player);
+    }
+
+});
 // =====================================
 // GAME LOOP
 // =====================================
@@ -1101,51 +1233,84 @@ function animate() {
     }
 
     const moving = direction.length() > 0.05;
-const running = !!keys["shift"];
-
-const speed = running ? 12 : 7;
-
 // =====================================
-// VEHICLE DRIVING
+// WALKING AND DRIVING
 // =====================================
 
 if (vehicleSystem.isDriving) {
 
+    // Steering comes ONLY from the joystick.
+    const steering = {
+        x: joystickX
+    };
+
+    // Keyboard support for PC.
+    const gas = accelerating || keys["w"] || keys["arrowup"];
+
+    const brake =
+        braking ||
+        keys["s"] ||
+        keys["arrowdown"];
+
     vehicleSystem.update(
         player,
-        keys,
-        joystickX,
-        joystickY,
+        steering,
+        gas,
+        brake,
         delta
     );
 
-} else if (moving) {
+    walkingControls.style.display = "none";
+    vehicleControls.style.display = "flex";
 
-    // Camera-relative character movement
+} else {
 
-    const forwardX = -Math.sin(cameraYaw);
-    const forwardZ = -Math.cos(cameraYaw);
+    vehicleControls.style.display = "none";
+    walkingControls.style.display = "block";
 
-    const rightX = Math.cos(cameraYaw);
-    const rightZ = -Math.sin(cameraYaw);
+    const moving = direction.length() > 0.05;
 
-    const worldX =
-        rightX * direction.x +
-        forwardX * -direction.y;
+    const running =
+        sprintLocked ||
+        sprintToggled ||
+        !!keys["shift"];
 
-    const worldZ =
-        rightZ * direction.x +
-        forwardZ * -direction.y;
+    const speed = running ? 12 : 7;
 
-    world.movePlayer(
-        player,
-        worldX,
-        worldZ,
-        speed,
-        delta
+    if (moving) {
+
+        const forwardX = -Math.sin(cameraYaw);
+        const forwardZ = -Math.cos(cameraYaw);
+
+        const rightX = Math.cos(cameraYaw);
+        const rightZ = -Math.sin(cameraYaw);
+
+        const worldX =
+            rightX * direction.x +
+            forwardX * -direction.y;
+
+        const worldZ =
+            rightZ * direction.x +
+            forwardZ * -direction.y;
+
+        world.movePlayer(
+            player,
+            worldX,
+            worldZ,
+            speed,
+            delta
+        );
+
+        player.rotation.y = Math.atan2(worldX, worldZ);
+
+    }
+
+    // Sprint animation state
+    player.userData.animate(
+        clock.elapsedTime,
+        moving || sprintLocked,
+        running
     );
-
-    player.rotation.y = Math.atan2(worldX, worldZ);
 
 }
 
@@ -1175,7 +1340,7 @@ if (vehicleSystem.isDriving) {
 
     if (vehicleSystem.isDriving) {
 
-    vehicleSystem.updateInteractionButton();
+    world.button.style.display = "none";
 
 } else {
 
