@@ -32,7 +32,34 @@ app.get("/api/health", (req, res) => {
         message: "Game server is running."
     });
 });
+// NIGERIAN SERVER TIME
+app.get("/api/time", (req, res) => {
+    const now = new Date();
 
+    const time = new Intl.DateTimeFormat("en-NG", {
+        timeZone: "Africa/Lagos",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+    }).format(now);
+
+    const date = new Intl.DateTimeFormat("en-NG", {
+        timeZone: "Africa/Lagos",
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    }).format(now);
+
+    res.json({
+        status: "success",
+        timezone: "Africa/Lagos",
+        epochMs: now.getTime(),
+        time,
+        date
+    });
+});
 // DATABASE HEALTH
 app.get("/api/db-health", async (req, res) => {
 
