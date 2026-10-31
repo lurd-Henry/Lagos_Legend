@@ -11,7 +11,9 @@ constructor(scene) {
     this.currentInteraction = null;
     this.createInteractionUI();
 }
-// COLLISION SYSTEM
+// =====================================
+// STATIC COLLIDERS
+// =====================================
 addCollider(x, z, width, depth) {
     this.colliders.push({
         minX: x - width / 2,
@@ -20,34 +22,74 @@ addCollider(x, z, width, depth) {
         maxZ: z + depth / 2
     });
 }
-collides(x, z) {
-    const radius = this.playerRadius;
+// Circular collision check
+collides(x, z, radius = this.playerRadius) {
     for (const box of this.colliders) {
         const closestX = THREE.MathUtils.clamp(
-            x, box.minX, box.maxX
+            x,
+            box.minX,
+            box.maxX
         );
         const closestZ = THREE.MathUtils.clamp(
-            z, box.minZ, box.maxZ
+            z,
+            box.minZ,
+            box.maxZ
         );
         const dx = x - closestX;
         const dz = z - closestZ;
-        if (dx * dx + dz * dz < radius * radius) {
+        if (
+            dx * dx + dz * dz <
+            radius * radius
+        ) {
             return true;
         }
     }
     return false;
 }
+// Rectangular collision check for vehicles
+collidesBox(x, z, width, depth) {
+    const minX = x - width / 2;
+    const maxX = x + width / 2;
+    const minZ = z - depth / 2;
+    const maxZ = z + depth / 2;
+    for (const box of this.colliders) {
+        const overlaps =
+            maxX > box.minX &&
+            minX < box.maxX &&
+            maxZ > box.minZ &&
+            minZ < box.maxZ;
+        if (overlaps) return true;
+    }
+    return false;
+}
+// Movement with separate X/Z collision resolution
 movePlayer(player, moveX, moveZ, speed, delta) {
-    const nextX = player.position.x + moveX * speed * delta;
-    const nextZ = player.position.z + moveZ * speed * delta;
-    if (!this.collides(nextX, player.position.z)) {
+    const nextX =
+        player.position.x + moveX * speed * delta;
+    const nextZ =
+        player.position.z + moveZ * speed * delta;
+    if (
+        !this.collides(
+            nextX,
+            player.position.z,
+            this.playerRadius
+        )
+    ) {
         player.position.x = nextX;
     }
-    if (!this.collides(player.position.x, nextZ)) {
+    if (
+        !this.collides(
+            player.position.x,
+            nextZ,
+            this.playerRadius
+        )
+    ) {
         player.position.z = nextZ;
     }
 }
+// =====================================
 // INTERACTIONS
+// =====================================
 addInteractable(object) {
     this.interactables.push(object);
 }
@@ -58,7 +100,8 @@ hideInteraction() {
     }
 }
 createInteractionUI() {
-    const container = document.getElementById("game-container");
+    const container =
+        document.getElementById("game-container");
     if (!container) return;
     const button = document.createElement("button");
     button.id = "game-interact-button";
@@ -103,15 +146,21 @@ updateInteractions(player) {
         bus: ["🚌", "BUS"],
         npc: ["👤", "TALK"]
     };
-    const display = icons[nearest.type] || ["✋", "OPEN"];
-    this.button.querySelector("#interaction-icon").textContent = display[0];
-    this.button.querySelector("#interaction-label").textContent =
-        display[1];
+    const display =
+        icons[nearest.type] || ["✋", "OPEN"];
+    this.button.querySelector(
+        "#interaction-icon"
+    ).textContent = display[0];
+    this.button.querySelector(
+        "#interaction-label"
+    ).textContent = display[1];
     this.button.style.display = "flex";
 }
 interact() {
     if (!this.currentInteraction) return;
-    if (typeof this.currentInteraction.action === "function") {
+    if (
+        typeof this.currentInteraction.action === "function"
+    ) {
         this.currentInteraction.action();
     }
 }
