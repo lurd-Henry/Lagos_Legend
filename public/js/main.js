@@ -4,6 +4,8 @@ import {
     createCharacter,
     updateCharacter
 } from "./character.js";
+import { TrafficSystems } from "./trafficSystems.js";
+import { AtmosphereSystems } from "./atmosphereSystems.js";
 import { NPCSystems } from "./npcSystems.js";
 import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
@@ -781,6 +783,14 @@ scene.add(player);
 
 vehicleSystem.playerReference = player;
 npcSystem.playerReference = player;
+const trafficSystem = new TrafficSystems(scene, world);
+
+const atmosphereSystem = new AtmosphereSystems(
+    scene,
+    container
+);
+
+trafficSystem.playerReference = player;
 // =====================================
 // CHARACTER CUSTOMISATION
 // =====================================
@@ -1230,6 +1240,10 @@ const delta = Math.min(clock.getDelta(), 0.05);
 
 // Update pedestrians
 npcSystem.update(delta);
+
+trafficSystem.update(delta);
+
+atmosphereSystem.update(delta);
 let moveX = joystickX;
 let moveZ = joystickY;
 if (keys["w"] || keys["arrowup"]) moveZ -= 1;
