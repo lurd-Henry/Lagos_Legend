@@ -15,7 +15,7 @@ export class NPCSystems {
         this.createMaterials();
         this.createDialogueUI();
 
-        this.createPedestrians(12);
+        this.createPedestrians(50);
 
     }
 
