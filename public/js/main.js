@@ -63,13 +63,21 @@ container.appendChild(renderer.domElement);
 // LIGHTING
 // =====================================
 
-scene.add(
-    new THREE.HemisphereLight(0xffffff, 0x777766, 2)
+const hemisphereLight = new THREE.HemisphereLight(
+    0xffffff,
+    0x777766,
+    2
 );
 
-const sunlight = new THREE.DirectionalLight(0xffffff, 2);
+scene.add(hemisphereLight);
+
+const sunlight = new THREE.DirectionalLight(
+    0xffffff,
+    2
+);
 
 sunlight.position.set(80, 100, 50);
+
 scene.add(sunlight);
 
 // =====================================
@@ -441,6 +449,7 @@ function createFence(x, z, width, depth) {
 // =====================================
 // STREETLIGHTS
 // =====================================
+const streetlightMaterials = [];
 
 function createStreetlight(x, z) {
 
@@ -462,10 +471,18 @@ function createStreetlight(x, z) {
     arm.position.set(0.8, 5.8, 0);
     group.add(arm);
 
-    const lamp = new THREE.Mesh(
-        new THREE.BoxGeometry(0.8, 0.25, 0.5),
-        new THREE.MeshBasicMaterial({ color: 0xffe8a3 })
-    );
+    const lampMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffe8a3,
+    emissive: 0xffc65c,
+    emissiveIntensity: 0
+});
+
+const lamp = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.25, 0.5),
+    lampMaterial
+);
+
+streetlightMaterials.push(lampMaterial);
 
     lamp.position.set(1.5, 5.7, 0);
     group.add(lamp);
@@ -787,7 +804,13 @@ const trafficSystem = new TrafficSystems(scene, world);
 
 const atmosphereSystem = new AtmosphereSystems(
     scene,
-    container
+    container,
+    {
+        ambientLight: hemisphereLight,
+        sunlight: sunlight,
+        clockElement: coordinates,
+        streetlightMaterials: streetlightMaterials
+    }
 );
 
 trafficSystem.playerReference = player;
@@ -1355,8 +1378,7 @@ if (vehicleSystem.isDriving && vehicleSystem.currentVehicle) {
 }
 
 updateCamera();
-coordinates.textContent =
-    `X: ${player.position.x.toFixed(1)} | Z: ${player.position.z.toFixed(1)}`;
+
 if (vehicleSystem.isDriving) {
     world.button.style.display = "none";
 } else {
