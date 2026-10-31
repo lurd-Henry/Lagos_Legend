@@ -13,6 +13,10 @@ export class VehicleSystems {
         this.acceleration = 12;
         this.braking = 20;
         this.steeringSpeed = 1.8;
+        this.trafficSystem = null;
+this.npcSystem = null;
+
+this.collisionCooldown = 0;
 
         this.createVehicles();
     }
@@ -55,7 +59,27 @@ export class VehicleSystems {
 
         return mesh;
     }
+// =====================================
+// PLAYER VS AI TRAFFIC COLLISION
+// =====================================
 
+checkTrafficCollision(
+    vehicleData,
+    nextX,
+    nextZ,
+    speed
+) {
+
+    if (!this.trafficSystem) return false;
+
+    return this.trafficSystem.handlePlayerCollision(
+        vehicleData,
+        nextX,
+        nextZ,
+        speed
+    );
+
+}
     // =====================================
     // VEHICLE WINDOWS
     // =====================================
@@ -1171,27 +1195,68 @@ export class VehicleSystems {
         const oldX = vehicle.position.x;
         const oldZ = vehicle.position.z;
 
-        const canMoveX = this.canVehicleMove(
-            vehicleData,
-            nextX,
-            oldZ,
-            vehicle.rotation.y
-        );
+        // =====================================
+// COLLISION WITH NPC TRAFFIC
+// =====================================
 
-        const canMoveZ = this.canVehicleMove(
-            vehicleData,
-            oldX,
-            nextZ,
-            vehicle.rotation.y
-        );
+const trafficCollision = this.checkTrafficCollision(
+    vehicleData,
+    nextX,
+    nextZ,
+    this.speed
+);
 
-        if (canMoveX) vehicle.position.x = nextX;
-        if (canMoveZ) vehicle.position.z = nextZ;
+if (trafficCollision) {
 
-        if (!canMoveX || !canMoveZ) {
-            this.speed = 0;
-        }
+    // Simulate the player's vehicle losing momentum.
+    this.speed *= 0.2;
 
+} else {
+
+    const canMoveX = this.canVehicleMove(
+        vehicleData,
+        nextX,
+        oldZ,
+        vehicle.rotation.y
+    );
+
+    const canMoveZ = this.canVehicleMove(
+        vehicleData,
+        oldX,
+        nextZ,
+        vehicle.rotation.y
+    );
+
+    if (canMoveX) {
+        vehicle.position.x = nextX;
+    }
+
+    if (canMoveZ) {
+        vehicle.position.z = nextZ;
+    }
+
+    if (!canMoveX || !canMoveZ) {
+        this.speed = 0;
+    }
+
+}
+
+// =====================================
+// PEDESTRIAN IMPACT
+// =====================================
+
+if (this.npcSystem) {
+
+    this.npcSystem.applyVehicleImpact(
+        vehicleData,
+        oldX,
+        oldZ,
+        nextX,
+        nextZ,
+        this.speed
+    );
+
+}
         // WORLD BOUNDARIES
         vehicle.position.x = THREE.MathUtils.clamp(
             vehicle.position.x,
