@@ -4,6 +4,7 @@ import {
     createCharacter,
     updateCharacter
 } from "./character.js";
+import { NPCSystems } from "./npcSystems.js";
 import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
 // =====================================
