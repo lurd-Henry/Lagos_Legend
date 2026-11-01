@@ -4,11 +4,13 @@ import {
     createCharacter,
     updateCharacter
 } from "./character.js";
+
 import { TrafficSystems } from "./trafficSystems.js";
 import { AtmosphereSystems } from "./atmosphereSystems.js";
 import { NPCSystems } from "./npcSystems.js";
 import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
+
 // =====================================
 // DEBUGGING - ERROR DETECTOR
 // =====================================
@@ -22,8 +24,9 @@ window.addEventListener("error", (event) => {
 window.addEventListener("unhandledrejection", (event) => {
     console.error("PROMISE ERROR:", event.reason);
 });
+
 // =====================================
-// LAGOS LEGENDS - STAGE 3.4 - 3.6
+// LAGOS LEGENDS
 // =====================================
 
 const container = document.getElementById("game-container");
@@ -39,28 +42,12 @@ const WORLD_LIMIT = 265;
 const scene = new THREE.Scene();
 const world = new WorldSystems(scene);
 
-// Create the NPC system
-const npcSystem = new NPCSystems(scene, world, container);
-npcSystem.playerReference = player;
-
-// Create the vehicle system
-const vehicleSystem = new VehicleSystems(scene, world);
-vehicleSystem.playerReference = player;
-
-// Create the traffic system
-const trafficSystem = new TrafficSystems(scene, world);
-trafficSystem.playerReference = player;
-
-// Connect the systems
-vehicleSystem.trafficSystem = trafficSystem;
-vehicleSystem.npcSystem = npcSystem;
-
-trafficSystem.playerVehicleSystem = vehicleSystem;
-trafficSystem.npcSystem = npcSystem;
-
-// Create atmosphere system
-const atmosphereSystem = new AtmosphereSystems(scene, container);scene.background = new THREE.Color(0x9bcbd8);
+scene.background = new THREE.Color(0x9bcbd8);
 scene.fog = new THREE.Fog(0x9bcbd8, 120, 400);
+
+// =====================================
+// CAMERA
+// =====================================
 
 const camera = new THREE.PerspectiveCamera(
     65,
@@ -69,6 +56,10 @@ const camera = new THREE.PerspectiveCamera(
     800
 );
 
+// =====================================
+// RENDERER
+// =====================================
+
 const renderer = new THREE.WebGLRenderer({
     antialias: false,
     powerPreference: "high-performance"
@@ -76,6 +67,7 @@ const renderer = new THREE.WebGLRenderer({
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
+
 container.appendChild(renderer.domElement);
 
 // =====================================
@@ -96,7 +88,6 @@ const sunlight = new THREE.DirectionalLight(
 );
 
 sunlight.position.set(80, 100, 50);
-
 scene.add(sunlight);
 
 // =====================================
@@ -139,7 +130,10 @@ scene.add(ground);
 
 const ROAD_WIDTH = 14;
 const SIDEWALK_WIDTH = 2;
-const ROAD_POSITIONS = [-180, -120, -60, 0, 60, 120, 180];
+
+const ROAD_POSITIONS = [
+    -180, -120, -60, 0, 60, 120, 180
+];
 
 function createRoad(x, z, horizontal = false) {
 
@@ -196,7 +190,6 @@ function createRoadMarkings() {
     const lineLength = 5;
     const spacing = 13;
 
-    // Vertical road markings
     ROAD_POSITIONS.forEach(x => {
 
         for (let z = -285; z <= 285; z += spacing) {
@@ -209,10 +202,8 @@ function createRoadMarkings() {
             line.position.set(x, 0.09, z);
             scene.add(line);
         }
-
     });
 
-    // Horizontal road markings
     ROAD_POSITIONS.forEach(z => {
 
         for (let x = -285; x <= 285; x += spacing) {
@@ -225,14 +216,13 @@ function createRoadMarkings() {
             line.position.set(x, 0.09, z);
             scene.add(line);
         }
-
     });
 }
 
 createRoadMarkings();
 
 // =====================================
-// BUILDING CREATION
+// BUILDING COLOURS
 // =====================================
 
 const cityColors = [
@@ -281,7 +271,7 @@ function createCityBuilding(x, z, width, depth, height, color) {
     roof.position.y = height + 0.3;
     building.add(roof);
 
-    // Windows on front and sides
+    // Windows
     const floors = Math.floor(height / 3.5);
 
     for (let floor = 0; floor < floors; floor++) {
@@ -300,9 +290,7 @@ function createCityBuilding(x, z, width, depth, height, color) {
             );
 
             building.add(frontWindow);
-
         }
-
     }
 
     // Entrance
@@ -315,18 +303,18 @@ function createCityBuilding(x, z, width, depth, height, color) {
     building.add(entrance);
 
     building.position.set(x, 0, z);
-scene.add(building);
+    scene.add(building);
 
-world.addCollider(x, z, width, depth);
+    world.addCollider(x, z, width, depth);
 
-world.addInteractable({
-    x,
-    z: z + depth / 2 + 2,
-    type: "building",
-    action: () => {
-        alert("Building interiors coming soon!");
-    }
-});
+    world.addInteractable({
+        x,
+        z: z + depth / 2 + 2,
+        type: "building",
+        action: () => {
+            alert("Building interiors coming soon!");
+        }
+    });
 }
 
 // =====================================
@@ -352,7 +340,7 @@ function createHouse(x, z, width, depth, color) {
     const roof = new THREE.Mesh(
         new THREE.ConeGeometry(width * 0.8, 2.5, 4),
         new THREE.MeshStandardMaterial({ color: 0x984b36 })
-    ); 
+    );
 
     roof.position.y = 5;
     roof.rotation.y = Math.PI / 4;
@@ -394,21 +382,20 @@ function createHouse(x, z, width, depth, color) {
     house.add(tank);
 
     house.position.set(x, 0, z);
-scene.add(house);
+    scene.add(house);
 
-world.addCollider(x, z, width, depth);
+    world.addCollider(x, z, width, depth);
 
-world.addInteractable({
-    x,
-    z: z + depth / 2 + 2,
-    type: "house",
-    action: () => {
-        alert("House interiors coming soon!");
-    }
-});
+    world.addInteractable({
+        x,
+        z: z + depth / 2 + 2,
+        type: "house",
+        action: () => {
+            alert("House interiors coming soon!");
+        }
+    });
 
-return house; 
-
+    return house;
 }
 
 // =====================================
@@ -432,20 +419,19 @@ function createFence(x, z, width, depth) {
 
         mesh.position.set(px, h / 2, pz);
         fence.add(mesh);
+
         world.addCollider(
-    x + px,
-    z + pz,
-    w,
-    d
-);
+            x + px,
+            z + pz,
+            w,
+            d
+        );
     }
 
-    // Back and side walls.
     wall(width, 1.7, 0.35, 0, -depth / 2);
     wall(0.35, 1.7, depth, -width / 2, 0);
     wall(0.35, 1.7, depth, width / 2, 0);
 
-    // Front wall sections leave a gate opening.
     wall(width * 0.36, 1.7, 0.35, -width * 0.32, depth / 2);
     wall(width * 0.36, 1.7, 0.35, width * 0.32, depth / 2);
 
@@ -457,7 +443,12 @@ function createFence(x, z, width, depth) {
             materials.concrete
         );
 
-        post.position.set(side * width * 0.14, 1.15, depth / 2);
+        post.position.set(
+            side * width * 0.14,
+            1.15,
+            depth / 2
+        );
+
         fence.add(post);
     }
 
@@ -468,6 +459,7 @@ function createFence(x, z, width, depth) {
 // =====================================
 // STREETLIGHTS
 // =====================================
+
 const streetlightMaterials = [];
 
 function createStreetlight(x, z) {
@@ -491,17 +483,17 @@ function createStreetlight(x, z) {
     group.add(arm);
 
     const lampMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffe8a3,
-    emissive: 0xffc65c,
-    emissiveIntensity: 0
-});
+        color: 0xffe8a3,
+        emissive: 0xffc65c,
+        emissiveIntensity: 0
+    });
 
-const lamp = new THREE.Mesh(
-    new THREE.BoxGeometry(0.8, 0.25, 0.5),
-    lampMaterial
-);
+    const lamp = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.25, 0.5),
+        lampMaterial
+    );
 
-streetlightMaterials.push(lampMaterial);
+    streetlightMaterials.push(lampMaterial);
 
     lamp.position.set(1.5, 5.7, 0);
     group.add(lamp);
@@ -535,8 +527,8 @@ function createTree(x, z, scale = 1) {
     tree.add(leaves);
 
     tree.scale.setScalar(scale);
-
     tree.position.set(x, 0, z);
+
     scene.add(tree);
 }
 
@@ -564,7 +556,6 @@ function createKiosk(x, z, color) {
     roof.position.y = 3.4;
     kiosk.add(roof);
 
-    // Shop opening
     const opening = new THREE.Mesh(
         new THREE.BoxGeometry(2.8, 1.4, 0.1),
         materials.glass
@@ -575,16 +566,17 @@ function createKiosk(x, z, color) {
 
     kiosk.position.set(x, 0, z);
     scene.add(kiosk);
+
     world.addCollider(x, z, 5.5, 4.5);
 
-world.addInteractable({
-    x,
-    z,
-    type: "shop",
-    action: () => {
-        alert("Welcome! This shop will be available soon.");
-    }
-});
+    world.addInteractable({
+        x,
+        z,
+        type: "shop",
+        action: () => {
+            alert("Welcome! This shop will be available soon.");
+        }
+    });
 }
 
 // =====================================
@@ -632,20 +624,21 @@ function createBusStop(x, z) {
 
     stop.position.set(x, 0, z);
     scene.add(stop);
+
     world.addCollider(x, z, 8, 3);
 
-world.addInteractable({
-    x,
-    z,
-    type: "bus",
-    action: () => {
-        alert("Public transport services coming soon!");
-    }
-});
+    world.addInteractable({
+        x,
+        z,
+        type: "bus",
+        action: () => {
+            alert("Public transport services coming soon!");
+        }
+    });
 }
 
 // =====================================
-// COMMERCIAL DISTRICT GENERATION
+// COMMERCIAL DISTRICT
 // =====================================
 
 const commercialBuildings = [
@@ -675,7 +668,6 @@ commercialBuildings.forEach((building, index) => {
         height,
         cityColors[index % cityColors.length]
     );
-
 });
 
 // =====================================
@@ -720,19 +712,16 @@ residentialLocations.forEach((location, index) => {
     );
 
     createFence(x, z, 19, 22);
-
 });
 
 // =====================================
 // ADDITIONAL CITY STRUCTURES
 // =====================================
 
-// Small shops
 createKiosk(-50, 90, 0xd8a13b);
 createKiosk(50, -90, 0xc96d38);
 createKiosk(150, 90, 0x3d9970);
 
-// Bus stops
 createBusStop(-12, -90);
 createBusStop(12, 90);
 
@@ -744,14 +733,12 @@ for (let z = -240; z <= 240; z += 60) {
 
     createStreetlight(-10, z);
     createStreetlight(10, z);
-
 }
 
 for (let x = -240; x <= 240; x += 60) {
 
     createStreetlight(x, -10);
     createStreetlight(x, 10);
-
 }
 
 // =====================================
@@ -775,7 +762,6 @@ treeLocations.forEach((position, index) => {
         position[1],
         index % 3 === 0 ? 1.2 : 0.9
     );
-
 });
 
 // =====================================
@@ -801,10 +787,6 @@ createBoundary(0, -WORLD_LIMIT, WORLD_SIZE, 2);
 createBoundary(0, WORLD_LIMIT, WORLD_SIZE, 2);
 createBoundary(-WORLD_LIMIT, 0, 2, WORLD_SIZE);
 createBoundary(WORLD_LIMIT, 0, 2, WORLD_SIZE);
-// =====================================
-// STAGE 6 - NPC SYSTEM
-// =====================================
-
 
 // =====================================
 // PLAYER
@@ -812,6 +794,32 @@ createBoundary(WORLD_LIMIT, 0, 2, WORLD_SIZE);
 
 const player = createCharacter();
 scene.add(player);
+
+// =====================================
+// INITIALISE GAME SYSTEMS
+// =====================================
+
+// NPC system
+const npcSystem = new NPCSystems(scene, world, container);
+npcSystem.playerReference = player;
+
+// Vehicle system
+const vehicleSystem = new VehicleSystems(scene, world);
+vehicleSystem.playerReference = player;
+
+// Traffic system
+const trafficSystem = new TrafficSystems(scene, world);
+trafficSystem.playerReference = player;
+
+// Connect systems
+vehicleSystem.trafficSystem = trafficSystem;
+vehicleSystem.npcSystem = npcSystem;
+
+trafficSystem.playerVehicleSystem = vehicleSystem;
+trafficSystem.npcSystem = npcSystem;
+
+// Atmosphere system
+const atmosphereSystem = new AtmosphereSystems(scene, container);
 
 // =====================================
 // CHARACTER CUSTOMISATION
@@ -847,9 +855,7 @@ Object.entries(selectors).forEach(([property, id]) => {
         updateCharacter(player, {
             [property]: Number(element.value)
         });
-
     });
-
 });
 
 // Randomise character
@@ -861,15 +867,15 @@ document.getElementById("randomise-button").addEventListener("click", () => {
 
         const element = document.getElementById(id);
 
-        const value = Math.floor(Math.random() * element.options.length);
+        const value = Math.floor(
+            Math.random() * element.options.length
+        );
 
         element.value = value;
         randomAppearance[property] = value;
-
     });
 
     updateCharacter(player, randomAppearance);
-
 });
 
 // Reset character
@@ -885,13 +891,10 @@ document.getElementById("reset-button").addEventListener("click", () => {
     };
 
     Object.entries(selectors).forEach(([property, id]) => {
-
         document.getElementById(id).value = defaults[property];
-
     });
 
     updateCharacter(player, defaults);
-
 });
 
 // =====================================
@@ -942,10 +945,12 @@ function updateCamera() {
         player.position.y + 1.5,
         player.position.z
     );
-
 }
 
-// Mobile camera controls
+// =====================================
+// MOBILE CAMERA CONTROLS
+// =====================================
+
 renderer.domElement.addEventListener("pointerdown", event => {
 
     if (event.pointerType === "mouse") return;
@@ -960,7 +965,6 @@ renderer.domElement.addEventListener("pointerdown", event => {
     lastTouchY = event.clientY;
 
     renderer.domElement.setPointerCapture(event.pointerId);
-
 });
 
 renderer.domElement.addEventListener("pointermove", event => {
@@ -973,11 +977,14 @@ renderer.domElement.addEventListener("pointermove", event => {
     cameraYaw -= deltaX * cameraSensitivity;
     cameraPitch += deltaY * cameraSensitivity;
 
-    cameraPitch = THREE.MathUtils.clamp(cameraPitch, -0.35, 0.85);
+    cameraPitch = THREE.MathUtils.clamp(
+        cameraPitch,
+        -0.35,
+        0.85
+    );
 
     lastTouchX = event.clientX;
     lastTouchY = event.clientY;
-
 });
 
 function releaseCameraTouch(event) {
@@ -985,13 +992,15 @@ function releaseCameraTouch(event) {
     if (event.pointerId === cameraTouchId) {
         cameraTouchId = null;
     }
-
 }
 
 renderer.domElement.addEventListener("pointerup", releaseCameraTouch);
 renderer.domElement.addEventListener("pointercancel", releaseCameraTouch);
 
-// PC mouse camera
+// =====================================
+// PC MOUSE CAMERA
+// =====================================
+
 renderer.domElement.addEventListener("mousedown", event => {
 
     if (event.button !== 2) return;
@@ -1000,7 +1009,6 @@ renderer.domElement.addEventListener("mousedown", event => {
 
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
-
 });
 
 window.addEventListener("mouseup", () => {
@@ -1017,11 +1025,14 @@ window.addEventListener("mousemove", event => {
     cameraYaw -= deltaX * cameraSensitivity;
     cameraPitch += deltaY * cameraSensitivity;
 
-    cameraPitch = THREE.MathUtils.clamp(cameraPitch, -0.35, 0.85);
+    cameraPitch = THREE.MathUtils.clamp(
+        cameraPitch,
+        -0.35,
+        0.85
+    );
 
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
-
 });
 
 renderer.domElement.addEventListener("contextmenu", event => {
@@ -1033,23 +1044,19 @@ renderer.domElement.addEventListener("contextmenu", event => {
 // =====================================
 
 const keys = {};
+
 window.addEventListener("keydown", event => {
 
     if (event.key.toLowerCase() === "e") {
 
         if (vehicleSystem.isDriving) {
-
             vehicleSystem.exitVehicle(player);
-
         } else {
-
             world.interact();
-
         }
-
     }
-
 });
+
 window.addEventListener("keydown", event => {
     keys[event.key.toLowerCase()] = true;
 });
@@ -1067,16 +1074,18 @@ const knob = document.getElementById("joystick-knob");
 
 let joystickX = 0;
 let joystickY = 0;
+
 let pointerId = null;
+
 let sprintLocked = false;
 let sprintToggled = false;
-
-// VEHICLE BUTTON STATES
 
 let accelerating = false;
 let braking = false;
 
+// =====================================
 // MOBILE HUD
+// =====================================
 
 const sprintButton = document.getElementById("sprint-button");
 
@@ -1087,16 +1096,23 @@ const accelerateButton = document.getElementById("accelerate-button");
 const brakeButton = document.getElementById("brake-button");
 const exitVehicleButton = document.getElementById("exit-vehicle-button");
 
+// =====================================
+// JOYSTICK RESET
+// =====================================
+
 function resetJoystick() {
 
     joystickX = 0;
     joystickY = 0;
+
     pointerId = null;
 
     knob.style.transform = "translate(0px, 0px)";
-
 }
-    // SPRINT SYSTEM
+
+// =====================================
+// JOYSTICK MOVEMENT
+// =====================================
 
 function updateJoystick(event) {
 
@@ -1113,45 +1129,47 @@ function updateJoystick(event) {
 
         x = (x / distance) * max;
         y = (y / distance) * max;
-
     }
 
     joystickX = x / max;
     joystickY = y / max;
 
-    // Sprint-lock zone
+    // Sprint lock
     if (!vehicleSystem.isDriving) {
 
-        if (joystickY < -0.88 && Math.abs(joystickX) < 0.4) {
+        if (
+            joystickY < -0.88 &&
+            Math.abs(joystickX) < 0.4
+        ) {
 
             sprintLocked = true;
 
-            // Return the joystick visually to its resting position.
             resetJoystick();
 
             return;
-
         }
 
-        // Pulling backwards cancels sprint lock.
         if (joystickY > 0.2) {
             sprintLocked = false;
         }
-
     }
 
     knob.style.transform = `translate(${x}px, ${y}px)`;
-
 }
+
+// =====================================
+// JOYSTICK EVENTS
+// =====================================
 
 joystick.addEventListener("pointerdown", event => {
 
     if (pointerId !== null) return;
 
     event.preventDefault();
+
     if (!vehicleSystem.isDriving) {
-    sprintLocked = false;
-}
+        sprintLocked = false;
+    }
 
     pointerId = event.pointerId;
 
@@ -1159,7 +1177,10 @@ joystick.addEventListener("pointerdown", event => {
 
     updateJoystick(event);
 });
+
+// =====================================
 // SPRINT TOGGLE
+// =====================================
 
 sprintButton.addEventListener("click", () => {
 
@@ -1178,7 +1199,6 @@ joystick.addEventListener("pointermove", event => {
     if (event.pointerId === pointerId) {
         updateJoystick(event);
     }
-
 });
 
 joystick.addEventListener("pointerup", event => {
@@ -1186,19 +1206,21 @@ joystick.addEventListener("pointerup", event => {
     if (event.pointerId === pointerId) {
         resetJoystick();
     }
-
 });
 
 joystick.addEventListener("pointercancel", resetJoystick);
-// HOLD ACCELERATION
+
+// =====================================
+// VEHICLE ACCELERATION
+// =====================================
 
 function startAccelerating(event) {
 
     event.preventDefault();
+
     accelerating = true;
 
     accelerateButton.classList.add("active");
-
 }
 
 function stopAccelerating() {
@@ -1206,7 +1228,6 @@ function stopAccelerating() {
     accelerating = false;
 
     accelerateButton.classList.remove("active");
-
 }
 
 accelerateButton.addEventListener("pointerdown", startAccelerating);
@@ -1214,15 +1235,17 @@ accelerateButton.addEventListener("pointerup", stopAccelerating);
 accelerateButton.addEventListener("pointercancel", stopAccelerating);
 accelerateButton.addEventListener("lostpointercapture", stopAccelerating);
 
-// HOLD BRAKE / REVERSE
+// =====================================
+// VEHICLE BRAKING / REVERSE
+// =====================================
 
 function startBraking(event) {
 
     event.preventDefault();
+
     braking = true;
 
     brakeButton.classList.add("active");
-
 }
 
 function stopBraking() {
@@ -1230,7 +1253,6 @@ function stopBraking() {
     braking = false;
 
     brakeButton.classList.remove("active");
-
 }
 
 brakeButton.addEventListener("pointerdown", startBraking);
@@ -1238,15 +1260,17 @@ brakeButton.addEventListener("pointerup", stopBraking);
 brakeButton.addEventListener("pointercancel", stopBraking);
 brakeButton.addEventListener("lostpointercapture", stopBraking);
 
+// =====================================
 // EXIT VEHICLE
+// =====================================
 
 exitVehicleButton.addEventListener("click", () => {
 
     if (vehicleSystem.isDriving) {
         vehicleSystem.exitVehicle(player);
     }
-
 });
+
 // =====================================
 // GAME LOOP
 // =====================================
@@ -1256,137 +1280,190 @@ const direction = new THREE.Vector2();
 
 function animate() {
 
-requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
 
-const delta = Math.min(clock.getDelta(), 0.05);
+    const delta = Math.min(clock.getDelta(), 0.05);
 
-// Update pedestrians
-npcSystem.update(delta);
+    // Update pedestrians
+    npcSystem.update(delta);
 
-trafficSystem.update(delta);
+    // Update traffic
+    trafficSystem.update(delta);
 
-atmosphereSystem.update(delta);
-let moveX = joystickX;
-let moveZ = joystickY;
-if (keys["w"] || keys["arrowup"]) moveZ -= 1;
-if (keys["s"] || keys["arrowdown"]) moveZ += 1;
-if (keys["a"] || keys["arrowleft"]) moveX -= 1;
-if (keys["d"] || keys["arrowright"]) moveX += 1;
-direction.set(moveX, moveZ);
-// Sprint lock automatically moves the player forward.
-if (!vehicleSystem.isDriving && sprintLocked) {
-    direction.set(0, -1);
-}
-if (direction.length() > 1) {
-    direction.normalize();
-}
-const moving = direction.length() > 0.05;
-// =====================================
-// WALKING AND DRIVING
-// =====================================
-if (vehicleSystem.isDriving) {
-    const steering = {
-        x: joystickX
-    };
-    const gas =
-        accelerating ||
-        keys["w"] ||
-        keys["arrowup"];
-    const brake =
-        braking ||
-        keys["s"] ||
-        keys["arrowdown"];
-    vehicleSystem.update(
-        player,
-        steering,
-        gas,
-        brake,
-        delta
-    );
-    walkingControls.style.display = "none";
-    vehicleControls.style.display = "flex";
-} else {
-    vehicleControls.style.display = "none";
-    walkingControls.style.display = "block";
-    const running =
-        sprintLocked ||
-        sprintToggled ||
-        !!keys["shift"];
-    const speed = running ? 12 : 7;
-    if (moving) {
-        const forwardX = -Math.sin(cameraYaw);
-        const forwardZ = -Math.cos(cameraYaw);
-        const rightX = Math.cos(cameraYaw);
-        const rightZ = -Math.sin(cameraYaw);
-        const worldX =
-            rightX * direction.x +
-            forwardX * -direction.y;
-        const worldZ =
-            rightZ * direction.x +
-            forwardZ * -direction.y;
-        world.movePlayer(
+    // Update atmosphere
+    atmosphereSystem.update(delta);
+
+    // =====================================
+    // INPUT
+    // =====================================
+
+    let moveX = joystickX;
+    let moveZ = joystickY;
+
+    if (keys["w"] || keys["arrowup"]) moveZ -= 1;
+    if (keys["s"] || keys["arrowdown"]) moveZ += 1;
+    if (keys["a"] || keys["arrowleft"]) moveX -= 1;
+    if (keys["d"] || keys["arrowright"]) moveX += 1;
+
+    direction.set(moveX, moveZ);
+
+    // Sprint lock
+    if (!vehicleSystem.isDriving && sprintLocked) {
+        direction.set(0, -1);
+    }
+
+    if (direction.length() > 1) {
+        direction.normalize();
+    }
+
+    const moving = direction.length() > 0.05;
+
+    // =====================================
+    // WALKING AND DRIVING
+    // =====================================
+
+    if (vehicleSystem.isDriving) {
+
+        const steering = {
+            x: joystickX
+        };
+
+        const gas =
+            accelerating ||
+            keys["w"] ||
+            keys["arrowup"];
+
+        const brake =
+            braking ||
+            keys["s"] ||
+            keys["arrowdown"];
+
+        vehicleSystem.update(
             player,
-            worldX,
-            worldZ,
-            speed,
+            steering,
+            gas,
+            brake,
             delta
         );
-        player.rotation.y = Math.atan2(worldX, worldZ);
+
+        walkingControls.style.display = "none";
+        vehicleControls.style.display = "flex";
+
+    } else {
+
+        vehicleControls.style.display = "none";
+        walkingControls.style.display = "block";
+
+        const running =
+            sprintLocked ||
+            sprintToggled ||
+            !!keys["shift"];
+
+        const speed = running ? 12 : 7;
+
+        if (moving) {
+
+            const forwardX = -Math.sin(cameraYaw);
+            const forwardZ = -Math.cos(cameraYaw);
+
+            const rightX = Math.cos(cameraYaw);
+            const rightZ = -Math.sin(cameraYaw);
+
+            const worldX =
+                rightX * direction.x +
+                forwardX * -direction.y;
+
+            const worldZ =
+                rightZ * direction.x +
+                forwardZ * -direction.y;
+
+            world.movePlayer(
+                player,
+                worldX,
+                worldZ,
+                speed,
+                delta
+            );
+
+            player.rotation.y = Math.atan2(
+                worldX,
+                worldZ
+            );
+        }
+
+        player.userData.animate(
+            clock.elapsedTime,
+            moving,
+            running
+        );
     }
-    player.userData.animate(
-        clock.elapsedTime,
-        moving,
-        running
-    );
-}
-// =====================================
-// WORLD BOUNDARIES
-// =====================================
-player.position.x = THREE.MathUtils.clamp(
-    player.position.x,
-    -WORLD_LIMIT + 5,
-    WORLD_LIMIT - 5
-);
-player.position.z = THREE.MathUtils.clamp(
-    player.position.z,
-    -WORLD_LIMIT + 5,
-    WORLD_LIMIT - 5
-);
-// =====================================
-// CAMERA AND HUD
-// =====================================
-// =====================================
-// AUTOMATIC VEHICLE CAMERA FOLLOW
-// =====================================
 
-if (vehicleSystem.isDriving && vehicleSystem.currentVehicle) {
+    // =====================================
+    // WORLD BOUNDARIES
+    // =====================================
 
-    const vehicleYaw =
-        vehicleSystem.currentVehicle.object.rotation.y;
-
-    // Keep camera behind the vehicle.
-    const targetYaw = vehicleYaw - Math.PI;
-
-    // Smoothly rotate camera towards vehicle direction.
-    const angleDifference = Math.atan2(
-        Math.sin(targetYaw - cameraYaw),
-        Math.cos(targetYaw - cameraYaw)
+    player.position.x = THREE.MathUtils.clamp(
+        player.position.x,
+        -WORLD_LIMIT + 5,
+        WORLD_LIMIT - 5
     );
 
-    cameraYaw += angleDifference * Math.min(1, delta * 3);
+    player.position.z = THREE.MathUtils.clamp(
+        player.position.z,
+        -WORLD_LIMIT + 5,
+        WORLD_LIMIT - 5
+    );
+
+    // =====================================
+    // AUTOMATIC VEHICLE CAMERA FOLLOW
+    // =====================================
+
+    if (
+        vehicleSystem.isDriving &&
+        vehicleSystem.currentVehicle
+    ) {
+
+        const vehicleYaw =
+            vehicleSystem.currentVehicle.object.rotation.y;
+
+        const targetYaw = vehicleYaw - Math.PI;
+
+        const angleDifference = Math.atan2(
+            Math.sin(targetYaw - cameraYaw),
+            Math.cos(targetYaw - cameraYaw)
+        );
+
+        cameraYaw += angleDifference * Math.min(
+            1,
+            delta * 3
+        );
+    }
+
+    // =====================================
+    // CAMERA AND HUD
+    // =====================================
+
+    updateCamera();
+
+    if (vehicleSystem.isDriving) {
+
+        if (world.button) {
+            world.button.style.display = "none";
+        }
+
+    } else {
+
+        world.updateInteractions(player);
+    }
+
+    // =====================================
+    // RENDER
+    // =====================================
+
+    renderer.render(scene, camera);
 }
 
-updateCamera();
-
-if (vehicleSystem.isDriving) {
-    world.button.style.display = "none";
-} else {
-    world.updateInteractions(player);
-}
-renderer.render(scene, camera);
-
-}
-
+// Start game
 animate();
 
 // =====================================
@@ -1396,13 +1473,13 @@ animate();
 window.addEventListener("resize", () => {
 
     camera.aspect = window.innerWidth / window.innerHeight;
+
     camera.updateProjectionMatrix();
 
     renderer.setSize(
         window.innerWidth,
         window.innerHeight
     );
-
 });
 
-console.log("LAGOS LEGENDS: STAGE 3.4 - 3.6 LOADED!");
+console.log("LAGOS LEGENDS: GAME LOADED!");
