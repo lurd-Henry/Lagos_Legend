@@ -32,7 +32,178 @@ window.addEventListener("unhandledrejection", (event) => {
 
 const container = document.getElementById("game-container");
 const coordinates = document.getElementById("coordinates");
+// =====================================
+// PLAYER HUD SYSTEM
+// =====================================
 
+const healthFill = document.getElementById("health-fill");
+const hungerFill = document.getElementById("hunger-fill");
+
+const healthValue = document.getElementById("health-value");
+const hungerValue = document.getElementById("hunger-value");
+
+const cashValue = document.getElementById("cash-value");
+const bankValue = document.getElementById("bank-value");
+
+const serverTime = document.getElementById("server-time");
+const serverDate = document.getElementById("server-date");
+
+let playerHealth = 100;
+let playerHunger = 100;
+
+const nairaFormatter = new Intl.NumberFormat("en-NG", {
+    maximumFractionDigits: 0
+});
+
+function formatNaira(value) {
+
+    try {
+
+        const amount = BigInt(value ?? 0);
+
+        return "₦" + nairaFormatter.format(amount);
+
+    } catch {
+
+        return "₦0";
+
+    }
+
+}
+
+
+// Update health bar
+
+function updateHealth(value) {
+
+    playerHealth = THREE.MathUtils.clamp(
+        Number(value) || 0,
+        0,
+        100
+    );
+
+    healthFill.style.width = `${playerHealth}%`;
+    healthValue.textContent = `${Math.round(playerHealth)}%`;
+
+}
+
+
+// Update hunger bar
+
+function updateHunger(value) {
+
+    playerHunger = THREE.MathUtils.clamp(
+        Number(value) || 0,
+        0,
+        100
+    );
+
+    hungerFill.style.width = `${playerHunger}%`;
+    hungerValue.textContent = `${Math.round(playerHunger)}%`;
+
+    hungerFill.style.background =
+        playerHunger <= 20 ? "#e64c55" : "#e8b34d";
+
+}
+
+
+// Update money
+
+function updateWallet(wallet) {
+
+    if (!wallet) return;
+
+    cashValue.textContent = formatNaira(wallet.cash);
+    bankValue.textContent = formatNaira(wallet.bank);
+
+}
+
+
+// Update the complete player profile
+
+function updatePlayerHUD(profile) {
+
+    if (!profile) return;
+
+    updateWallet(profile);
+
+    if (profile.hunger !== undefined) {
+        updateHunger(profile.hunger);
+    }
+
+}
+
+
+// Allow other game systems to update the HUD later
+
+window.lagosHUD = {
+
+    updateHealth,
+    updateHunger,
+    updateWallet,
+    updatePlayerHUD
+
+};
+
+
+// =====================================
+// RESTORE PLAYER HUD AFTER LOGIN
+// =====================================
+
+window.addEventListener("lagos:authenticated", (event) => {
+
+    updatePlayerHUD(event.detail);
+
+});
+
+if (window.lagosPlayerProfile) {
+
+    updatePlayerHUD(window.lagosPlayerProfile);
+
+}
+
+
+// =====================================
+// SERVER TIME
+// =====================================
+
+async function updateServerTime() {
+
+    try {
+
+        const response = await fetch("/api/time");
+
+        if (!response.ok) {
+            throw new Error("Unable to retrieve server time.");
+        }
+
+        const data = await response.json();
+
+        serverTime.textContent = data.time;
+        serverDate.textContent = data.date.toUpperCase();
+
+    } catch (error) {
+
+        console.error("SERVER TIME ERROR:", error.message);
+
+        serverTime.textContent = "--:--:--";
+        serverDate.textContent = "TIME UNAVAILABLE";
+
+    }
+
+}
+
+updateServerTime();
+
+// Refresh the server clock every 30 seconds.
+
+setInterval(updateServerTime, 30000);
+
+
+// Initial health and hunger display
+
+updateHealth(100);
+updateHunger(100);
 // =====================================
 // WORLD SETTINGS
 // =====================================
