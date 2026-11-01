@@ -792,3 +792,61 @@ canvas {
     -webkit-appearance: none;
     appearance: none;
 }
+/* =====================================
+   STAGE 8.2 - CHARACTER CREATION
+===================================== */
+
+#character-name-field {
+    margin: 18px 0;
+}
+
+#character-name-field[hidden] {
+    display: none !important;
+}
+
+#character-name-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #c9a34a;
+}
+
+#character-name {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.07);
+    color: white;
+    font-size: 16px;
+    outline: none;
+}
+
+#character-name:focus {
+    border-color: #c9a34a;
+}
+
+#character-name::placeholder {
+    color: #999;
+}
+
+#save-character-button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #c9a34a;
+    color: #171717;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+#save-character-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
