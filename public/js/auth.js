@@ -464,17 +464,17 @@ window.addEventListener("keydown", (event) => {
 }, true);
 
 
-window.addEventListener("pointerdown", (event) => {
+//window.addEventListener("pointerdown", (event) => {
 
-    if (!authenticated && !authScreen.contains(event.target)) {
+    //if (!authenticated && !authScreen.contains(event.target)) {
 
-        event.preventDefault();
+        //event.preventDefault();
 
-        event.stopImmediatePropagation();
+        //event.stopImmediatePropagation();
 
-    }
+   // }
 
-}, true);
+//}, true);
 
 
 // ==========================================
