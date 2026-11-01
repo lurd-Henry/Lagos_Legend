@@ -921,8 +921,14 @@ document.getElementById("reset-button").addEventListener("click", () => {
 let cameraYaw = 0;
 let cameraPitch = 0.25;
 
+
 const cameraDistance = 10;
 const cameraHeight = 2.5;
+
+const indoorCameraDistance = 4.5;
+const indoorCameraHeight = 1.5;
+
+let cameraWasInside = false;
 
 let cameraTouchId = null;
 let lastTouchX = 0;
@@ -934,34 +940,94 @@ let lastMouseY = 0;
 
 const cameraSensitivity = 0.006;
 
+// =====================================
+// THIRD-PERSON CAMERA SYSTEM
+// =====================================
+
 function updateCamera() {
 
-    const horizontalDistance =
-        cameraDistance * Math.cos(cameraPitch);
+    const indoor = interiorSystem.isInside;
 
-    const cameraX =
+    const distance = indoor
+        ? indoorCameraDistance
+        : cameraDistance;
+
+    const height = indoor
+        ? indoorCameraHeight
+        : cameraHeight;
+
+    const horizontalDistance =
+        distance * Math.cos(cameraPitch);
+
+    let cameraX =
         player.position.x +
         Math.sin(cameraYaw) * horizontalDistance;
 
-    const cameraZ =
+    let cameraZ =
         player.position.z +
         Math.cos(cameraYaw) * horizontalDistance;
 
-    const cameraY =
+    let cameraY =
         player.position.y +
-        cameraHeight +
-        cameraDistance * Math.sin(cameraPitch);
+        height +
+        distance * Math.sin(cameraPitch);
 
-    camera.position.lerp(
-        new THREE.Vector3(cameraX, cameraY, cameraZ),
-        0.15
+    // =================================
+    // INDOOR CAMERA RESTRICTIONS
+    // =================================
+
+    if (indoor) {
+
+        // Keep camera inside the room
+        cameraX = THREE.MathUtils.clamp(
+            cameraX,
+            991.8,
+            1008.2
+        );
+
+        cameraZ = THREE.MathUtils.clamp(
+            cameraZ,
+            992.8,
+            1007.2
+        );
+
+        // Prevent camera from entering ceiling/floor
+        cameraY = THREE.MathUtils.clamp(
+            cameraY,
+            1.3,
+            4.4
+        );
+
+    }
+
+    const targetPosition = new THREE.Vector3(
+        cameraX,
+        cameraY,
+        cameraZ
     );
+
+    // Snap camera on first frame after entering
+    if (indoor && !cameraWasInside) {
+
+        camera.position.copy(targetPosition);
+
+    } else {
+
+        camera.position.lerp(
+            targetPosition,
+            0.15
+        );
+
+    }
 
     camera.lookAt(
         player.position.x,
         player.position.y + 1.5,
         player.position.z
     );
+
+    cameraWasInside = indoor;
+
 }
 
 // =====================================
@@ -994,11 +1060,11 @@ renderer.domElement.addEventListener("pointermove", event => {
     cameraYaw -= deltaX * cameraSensitivity;
     cameraPitch += deltaY * cameraSensitivity;
 
-    cameraPitch = THREE.MathUtils.clamp(
-        cameraPitch,
-        -0.35,
-        0.85
-    );
+   cameraPitch = THREE.MathUtils.clamp(
+    cameraPitch,
+    interiorSystem.isInside ? -0.12 : -0.35,
+    interiorSystem.isInside ? 0.45 : 0.85
+);
 
     lastTouchX = event.clientX;
     lastTouchY = event.clientY;
