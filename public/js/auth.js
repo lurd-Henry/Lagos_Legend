@@ -453,29 +453,16 @@ async function initialiseAuth() {
 
 window.addEventListener("keydown", (event) => {
 
-    if (!authenticated) {
+    if (authenticated) return;
 
-        event.preventDefault();
+    // Allow keyboard input inside the authentication screen.
+    if (authScreen.contains(event.target)) return;
 
-        event.stopImmediatePropagation();
-
-    }
+    // Block keyboard controls from reaching the game.
+    event.preventDefault();
+    event.stopImmediatePropagation();
 
 }, true);
-
-
-//window.addEventListener("pointerdown", (event) => {
-
-    //if (!authenticated && !authScreen.contains(event.target)) {
-
-        //event.preventDefault();
-
-        //event.stopImmediatePropagation();
-
-   // }
-
-//}, true);
-
 
 // ==========================================
 // START
