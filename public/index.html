@@ -199,19 +199,104 @@
     <div id="game-container"></div>
 
 
-    <div id="game-ui">
+   <div id="game-ui">
 
-        <h2>LAGOS LEGENDS</h2>
+    <h2>LAGOS LEGENDS</h2>
 
-        <p>THE CITY IS YOURS.</p>
+    <p>THE CITY IS YOURS.</p>
 
-        <span id="coordinates">Initialising...</span>
+    <span id="coordinates">Initialising...</span>
 
-        <button id="customise-button">
-            CUSTOMISE CHARACTER
-        </button>
+    <button id="customise-button">
+        CUSTOMISE CHARACTER
+    </button>
+
+</div>
+
+
+<!-- =================================
+     PLAYER STATUS HUD
+================================= -->
+
+<div id="player-hud">
+
+    <!-- HEALTH AND HUNGER -->
+
+    <div id="player-status">
+
+        <div class="status-row">
+
+            <div class="status-icon health-icon">♥</div>
+
+            <div class="status-content">
+
+                <div class="status-heading">
+                    <span>HEALTH</span>
+                    <strong id="health-value">100%</strong>
+                </div>
+
+                <div class="status-track">
+                    <div id="health-fill"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="status-row">
+
+            <div class="status-icon hunger-icon">✦</div>
+
+            <div class="status-content">
+
+                <div class="status-heading">
+                    <span>HUNGER</span>
+                    <strong id="hunger-value">100%</strong>
+                </div>
+
+                <div class="status-track">
+                    <div id="hunger-fill"></div>
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
+
+
+    <!-- MONEY AND TIME -->
+
+    <div id="player-finances">
+
+        <div class="money-row">
+
+            <span class="money-label">CASH</span>
+
+            <strong id="cash-value">₦0</strong>
+
+        </div>
+
+        <div class="money-row bank-row">
+
+            <span class="money-label">BANK</span>
+
+            <strong id="bank-value">₦0</strong>
+
+        </div>
+
+        <div id="server-clock">
+
+            <span id="server-time">--:--:--</span>
+
+            <span id="server-date">LOADING...</span>
+
+        </div>
+
+    </div>
+
+</div>
 
 
     <!-- CHARACTER CUSTOMISATION -->
