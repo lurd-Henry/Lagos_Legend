@@ -7,9 +7,9 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <meta name="theme-color" content="#9bcbd8">
+    <meta name="theme-color" content="#111111">
 
-    <title>Lagos Legends</title>
+    <title>Lagos Legends | The City Is Yours</title>
 
     <link rel="stylesheet" href="/css/style.css">
 
@@ -24,7 +24,180 @@
 
 <body>
 
+    <!-- AUTHENTICATION SCREEN -->
+
+    <section id="auth-screen">
+
+        <div class="auth-background"></div>
+
+        <div class="auth-content">
+
+            <div class="auth-brand">
+
+                <div class="brand-symbol">LL</div>
+
+                <h1>LAGOS <span>LEGENDS</span></h1>
+
+                <p>THE CITY IS YOURS.</p>
+
+            </div>
+
+
+            <div class="auth-card">
+
+                <div class="auth-heading">
+
+                    <span class="auth-eyebrow">
+                        YOUR STORY STARTS HERE
+                    </span>
+
+                    <h2 id="auth-title">Welcome Back.</h2>
+
+                    <p id="auth-description">
+                        Your city is waiting. Pick up where you left off.
+                    </p>
+
+                </div>
+
+
+                <div class="auth-tabs">
+
+                    <button class="auth-tab active"
+                            id="login-tab"
+                            type="button">
+                        LOGIN
+                    </button>
+
+                    <button class="auth-tab"
+                            id="register-tab"
+                            type="button">
+                        CREATE ACCOUNT
+                    </button>
+
+                </div>
+
+
+                <form id="auth-form">
+
+                    <div class="auth-field" id="username-field" hidden>
+
+                        <label for="auth-username">USERNAME</label>
+
+                        <input
+                            type="text"
+                            id="auth-username"
+                            placeholder="Choose your username"
+                            minlength="3"
+                            maxlength="24"
+                            autocomplete="username"
+                        >
+
+                    </div>
+
+
+                    <div class="auth-field">
+
+                        <label for="auth-email">EMAIL ADDRESS</label>
+
+                        <input
+                            type="email"
+                            id="auth-email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="auth-field">
+
+                        <label for="auth-password">PASSWORD</label>
+
+                        <div class="password-wrapper">
+
+                            <input
+                                type="password"
+                                id="auth-password"
+                                placeholder="Enter your password"
+                                minlength="8"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <button type="button"
+                                    id="toggle-password">
+                                SHOW
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="auth-field"
+                         id="confirm-password-field"
+                         hidden>
+
+                        <label for="auth-confirm-password">
+                            CONFIRM PASSWORD
+                        </label>
+
+                        <input
+                            type="password"
+                            id="auth-confirm-password"
+                            placeholder="Enter password again"
+                            autocomplete="new-password"
+                        >
+
+                    </div>
+
+
+                    <div id="auth-message" aria-live="polite"></div>
+
+
+                    <button type="submit"
+                            id="auth-submit"
+                            class="auth-submit">
+
+                        <span id="auth-submit-text">
+                            ENTER THE CITY
+                        </span>
+
+                        <span class="auth-arrow">→</span>
+
+                    </button>
+
+                </form>
+
+
+                <p class="auth-footer">
+
+                    By continuing, you agree to play fair
+                    and respect the Lagos Legends community.
+
+                </p>
+
+            </div>
+
+
+            <div class="auth-bottom">
+
+                <span>AN OPEN WORLD. ENDLESS POSSIBILITIES.</span>
+
+                <span>© LAGOS LEGENDS</span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- GAME -->
+
     <div id="game-container"></div>
+
 
     <div id="game-ui">
 
@@ -40,6 +213,8 @@
 
     </div>
 
+
+    <!-- CHARACTER CUSTOMISATION -->
 
     <div id="character-panel">
 
@@ -154,44 +329,67 @@
 
 
     <!-- MOVEMENT JOYSTICK -->
-<div id="joystick">
-    <div id="sprint-zone">SPRINT</div>
-    <div id="joystick-knob"></div>
-</div>
 
-<!-- WALKING CONTROLS -->
-<div id="walking-controls">
+    <div id="joystick">
 
-    <button id="sprint-button" class="control-button">
-        <span>🏃</span>
-    </button>
+        <div id="sprint-zone">SPRINT</div>
 
-</div>
+        <div id="joystick-knob"></div>
 
-<!-- VEHICLE CONTROLS -->
-<div id="vehicle-controls">
+    </div>
 
-    <button id="accelerate-button" class="control-button vehicle-button">
-        <span>▲</span>
-        <small>GAS</small>
-    </button>
 
-    <button id="brake-button" class="control-button vehicle-button">
-        <span>▼</span>
-        <small>BRAKE</small>
-    </button>
+    <!-- WALKING CONTROLS -->
 
-    <button id="exit-vehicle-button" class="control-button exit-button">
-        <span>🚪</span>
-    </button>
+    <div id="walking-controls">
 
-</div>
+        <button id="sprint-button" class="control-button">
+            <span>🏃</span>
+        </button>
+
+    </div>
+
+
+    <!-- VEHICLE CONTROLS -->
+
+    <div id="vehicle-controls">
+
+        <button id="accelerate-button"
+                class="control-button vehicle-button">
+
+            <span>▲</span>
+            <small>GAS</small>
+
+        </button>
+
+
+        <button id="brake-button"
+                class="control-button vehicle-button">
+
+            <span>▼</span>
+            <small>BRAKE</small>
+
+        </button>
+
+
+        <button id="exit-vehicle-button"
+                class="control-button exit-button">
+
+            <span>🚪</span>
+
+        </button>
+
+    </div>
 
 
     <div id="controls-hint">
         WASD / ARROW KEYS
     </div>
 
+
+    <!-- AUTHENTICATION FIRST, THEN GAME -->
+
+    <script type="module" src="/js/auth.js"></script>
 
     <script type="module" src="/js/main.js"></script>
 
