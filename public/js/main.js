@@ -5,6 +5,7 @@ import {
     updateCharacter
 } from "./character.js";
 
+import { InteriorSystems } from "./interiorSystems.js";
 import { TrafficSystems } from "./trafficSystems.js";
 import { AtmosphereSystems } from "./atmosphereSystems.js";
 import { NPCSystems } from "./npcSystems.js";
@@ -41,6 +42,7 @@ const WORLD_LIMIT = 265;
 
 const scene = new THREE.Scene();
 const world = new WorldSystems(scene);
+let interiorSystem = null;
 
 scene.background = new THREE.Color(0x9bcbd8);
 scene.fog = new THREE.Fog(0x9bcbd8, 120, 400);
@@ -308,13 +310,15 @@ function createCityBuilding(x, z, width, depth, height, color) {
     world.addCollider(x, z, width, depth);
 
     world.addInteractable({
-        x,
-        z: z + depth / 2 + 2,
-        type: "building",
-        action: () => {
-            alert("Building interiors coming soon!");
+    x,
+    z: z + depth / 2 + 2,
+    type: "building",
+    action: () => {
+        if (interiorSystem) {
+            interiorSystem.enter("shop", x, z);
         }
-    });
+    }
+});
 }
 
 // =====================================
@@ -387,13 +391,15 @@ function createHouse(x, z, width, depth, color) {
     world.addCollider(x, z, width, depth);
 
     world.addInteractable({
-        x,
-        z: z + depth / 2 + 2,
-        type: "house",
-        action: () => {
-            alert("House interiors coming soon!");
+    x,
+    z: z + depth / 2 + 2,
+    type: "house",
+    action: () => {
+        if (interiorSystem) {
+            interiorSystem.enter("house", x, z);
         }
-    });
+    }
+});
 
     return house;
 }
@@ -574,8 +580,10 @@ function createKiosk(x, z, color) {
         z,
         type: "shop",
         action: () => {
-            alert("Welcome! This shop will be available soon.");
-        }
+    if (interiorSystem) {
+        interiorSystem.enter("shop", x, z);
+    }
+}
     });
 }
 
@@ -794,7 +802,16 @@ createBoundary(WORLD_LIMIT, 0, 2, WORLD_SIZE);
 
 const player = createCharacter();
 scene.add(player);
+// =====================================
+// STAGE 7 - INTERIOR SYSTEM
+// =====================================
 
+interiorSystem = new InteriorSystems(
+    scene,
+    player,
+    camera,
+    container
+);
 // =====================================
 // INITIALISE GAME SYSTEMS
 // =====================================
@@ -1049,12 +1066,22 @@ window.addEventListener("keydown", event => {
 
     if (event.key.toLowerCase() === "e") {
 
-        if (vehicleSystem.isDriving) {
+        if (interiorSystem.isInside) {
+
+            interiorSystem.interact();
+
+        } else if (vehicleSystem.isDriving) {
+
             vehicleSystem.exitVehicle(player);
+
         } else {
+
             world.interact();
+
         }
+
     }
+
 });
 
 window.addEventListener("keydown", event => {
@@ -1377,13 +1404,27 @@ function animate() {
                 rightZ * direction.x +
                 forwardZ * -direction.y;
 
-            world.movePlayer(
-                player,
-                worldX,
-                worldZ,
-                speed,
-                delta
-            );
+            if (interiorSystem.isInside) {
+
+    interiorSystem.movePlayer(
+        player,
+        worldX,
+        worldZ,
+        speed,
+        delta
+    );
+
+} else {
+
+    world.movePlayer(
+        player,
+        worldX,
+        worldZ,
+        speed,
+        delta
+    );
+
+}
 
             player.rotation.y = Math.atan2(
                 worldX,
@@ -1402,6 +1443,8 @@ function animate() {
     // WORLD BOUNDARIES
     // =====================================
 
+    if (!interiorSystem.isInside) {
+
     player.position.x = THREE.MathUtils.clamp(
         player.position.x,
         -WORLD_LIMIT + 5,
@@ -1413,6 +1456,8 @@ function animate() {
         -WORLD_LIMIT + 5,
         WORLD_LIMIT - 5
     );
+
+}
 
     // =====================================
     // AUTOMATIC VEHICLE CAMERA FOLLOW
@@ -1445,16 +1490,20 @@ function animate() {
 
     updateCamera();
 
-    if (vehicleSystem.isDriving) {
+    if (
+    vehicleSystem.isDriving ||
+    interiorSystem.isInside
+) {
 
-        if (world.button) {
-            world.button.style.display = "none";
-        }
-
-    } else {
-
-        world.updateInteractions(player);
+    if (world.button) {
+        world.button.style.display = "none";
     }
+
+} else {
+
+    world.updateInteractions(player);
+
+}
 
     // =====================================
     // RENDER
