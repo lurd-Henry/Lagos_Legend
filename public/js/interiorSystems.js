@@ -18,6 +18,11 @@ export class InteriorSystems {
 
         this.savedPosition = new THREE.Vector3();
         this.savedRotation = 0;
+        // Exterior visibility management
+this.savedVisibility = new Map();
+
+this.savedBackground = null;
+this.savedFog = null;
 
         this.interiorCenter = new THREE.Vector3(1000, 0, 1000);
 
@@ -259,12 +264,26 @@ export class InteriorSystems {
         );
 
         // Interior lights
-        const light = new THREE.PointLight(
-            0xffe1b2,
-            45,
-            35
-        );
+        // =====================================
+// INTERIOR LIGHTING
+// =====================================
 
+const ambient = new THREE.AmbientLight(
+    0xffe8cf,
+    1.8
+);
+
+this.interiorGroup.add(ambient);
+
+const light = new THREE.PointLight(
+    0xffd9a1,
+    55,
+    35
+);
+
+light.position.set(0, 4.3, 0);
+
+this.interiorGroup.add(light);
         light.position.set(0, 4.3, 0);
 
         this.interiorGroup.add(light);
@@ -287,7 +306,60 @@ export class InteriorSystems {
         this.createDoor();
 
     }
+// =====================================
+// HIDE EXTERIOR WORLD
+// =====================================
 
+hideExterior() {
+
+    this.savedVisibility.clear();
+
+    this.savedBackground = this.scene.background;
+    this.savedFog = this.scene.fog;
+
+    for (const object of this.scene.children) {
+
+        // Keep player visible
+        if (object === this.player) continue;
+
+        // Keep interior visible
+        if (object === this.interiorGroup) continue;
+
+        this.savedVisibility.set(
+            object,
+            object.visible
+        );
+
+        object.visible = false;
+
+    }
+
+    // Indoor background
+    this.scene.background = new THREE.Color(0x201b17);
+
+    this.scene.fog = null;
+
+}
+
+
+// =====================================
+// RESTORE EXTERIOR WORLD
+// =====================================
+
+restoreExterior() {
+
+    for (const [object, visibility] of this.savedVisibility) {
+
+        object.visible = visibility;
+
+    }
+
+    this.savedVisibility.clear();
+
+    this.scene.background = this.savedBackground;
+    this.scene.fog = this.savedFog;
+
+}
     // =====================================
     // WINDOWS
     // =====================================
@@ -653,67 +725,83 @@ export class InteriorSystems {
     // ENTER BUILDING
     // =====================================
 
-    enter(type, exteriorX, exteriorZ) {
+    // =====================================
+// ENTER BUILDING
+// =====================================
 
-        if (this.isInside) return;
+enter(type, exteriorX, exteriorZ) {
 
-        this.savedPosition.copy(this.player.position);
+    if (this.isInside) return;
 
-        this.savedRotation = this.player.rotation.y;
+    this.savedPosition.copy(this.player.position);
 
-        this.currentInterior = type;
+    this.savedRotation = this.player.rotation.y;
 
-        this.createInterior(type);
+    this.currentInterior = type;
 
-        this.isInside = true;
+    this.createInterior(type);
 
-        this.player.position.set(
-            1000,
-            0,
-            1004
-        );
+    // Hide outdoor environment
+    this.hideExterior();
 
-        this.player.rotation.y = Math.PI;
+    this.isInside = true;
 
-        this.player.visible = true;
+    // Place player inside
+    this.player.position.set(
+        1000,
+        0,
+        1004
+    );
 
-        this.exitButton.style.display = "block";
+    this.player.rotation.y = Math.PI;
 
-        console.log("Entered:", type);
+    this.player.visible = true;
 
-    }
+    this.exitButton.style.display = "block";
+
+    console.log("Entered interior:", type);
+
+}
 
     // =====================================
     // EXIT BUILDING
     // =====================================
 
-    exit() {
+    // =====================================
+// EXIT BUILDING
+// =====================================
 
-        if (!this.isInside) return;
+exit() {
 
-        this.player.position.copy(this.savedPosition);
+    if (!this.isInside) return;
 
-        this.player.rotation.y = this.savedRotation;
+    // Restore outdoor environment
+    this.restoreExterior();
 
-        this.isInside = false;
+    // Restore player position
+    this.player.position.copy(this.savedPosition);
 
-        this.currentInterior = null;
+    this.player.rotation.y = this.savedRotation;
 
-        this.exitButton.style.display = "none";
+    this.isInside = false;
 
-        if (this.interiorGroup) {
+    this.currentInterior = null;
 
-            this.scene.remove(this.interiorGroup);
+    this.exitButton.style.display = "none";
 
-            this.interiorGroup = null;
+    if (this.interiorGroup) {
 
-        }
+        this.scene.remove(this.interiorGroup);
 
-        this.furniture = [];
-
-        console.log("Exited building");
+        this.interiorGroup = null;
 
     }
+
+    this.furniture = [];
+
+    console.log("Exited interior");
+
+}
 
     // =====================================
     // INTERIOR COLLISION
