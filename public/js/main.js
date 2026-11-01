@@ -845,6 +845,276 @@ const atmosphereSystem = new AtmosphereSystems(scene, container);
 const panel = document.getElementById("character-panel");
 const customiseButton = document.getElementById("customise-button");
 const closeButton = document.getElementById("close-panel");
+// =====================================
+// STAGE 8.2 - CHARACTER CREATION STATE
+// =====================================
+
+const characterNameField = document.getElementById(
+    "character-name-field"
+);
+
+const characterNameInput = document.getElementById(
+    "character-name"
+);
+
+const saveCharacterButton = document.getElementById(
+    "save-character-button"
+);
+
+let characterCreationActive = false;
+let playerProfile = null;
+
+const defaultAppearance = {
+    skin: 1,
+    hairstyle: 0,
+    hair: 0,
+    top: 0,
+    trousers: 0,
+    shoes: 0
+};
+// =====================================
+// LOAD SAVED CHARACTER APPEARANCE
+// =====================================
+
+function loadCharacterAppearance(appearance) {
+
+    const savedAppearance = {
+        ...defaultAppearance,
+        ...(appearance || {})
+    };
+
+    Object.entries(selectors).forEach(([property, id]) => {
+
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.value = savedAppearance[property];
+        }
+
+    });
+
+    updateCharacter(player, savedAppearance);
+
+}
+// =====================================
+// CHARACTER CREATION MODE
+// =====================================
+
+function openCharacterCreator(profile) {
+
+    playerProfile = profile;
+
+    loadCharacterAppearance(profile.appearance);
+
+    characterCreationActive = !profile.character_created;
+
+    if (characterCreationActive) {
+
+        // New player must create a character.
+
+        panel.classList.add("open");
+
+        characterNameField.hidden = false;
+
+        characterNameInput.value =
+            profile.character_name || "";
+
+        saveCharacterButton.hidden = false;
+
+        closeButton.style.display = "none";
+
+        customiseButton.style.display = "none";
+
+        saveCharacterButton.textContent = "CREATE CHARACTER";
+
+    } else {
+
+        // Existing player has already created a character.
+
+        characterCreationActive = false;
+
+        panel.classList.remove("open");
+
+        characterNameField.hidden = true;
+
+        saveCharacterButton.hidden = false;
+
+        closeButton.style.display = "";
+
+        customiseButton.style.display = "";
+
+        saveCharacterButton.textContent = "SAVE CHANGES";
+
+    }
+
+}
+
+
+// =====================================
+// AUTHENTICATION PROFILE EVENT
+// =====================================
+
+window.addEventListener("lagos:authenticated", (event) => {
+
+    openCharacterCreator(event.detail);
+
+});
+
+// Also handles an already-authenticated player
+// if their profile loads before this listener.
+
+if (window.lagosPlayerProfile) {
+
+    openCharacterCreator(window.lagosPlayerProfile);
+
+}
+// =====================================
+// SAVE CHARACTER TO SUPABASE
+// =====================================
+
+saveCharacterButton.addEventListener("click", async () => {
+
+    const sessionKey = "lagos_legends_session";
+
+    let session;
+
+    try {
+
+        session = JSON.parse(
+            localStorage.getItem(sessionKey)
+        );
+
+    } catch {
+
+        alert("Your login session could not be found. Please log in again.");
+        return;
+
+    }
+
+    if (!session?.access_token) {
+
+        alert("Your session has expired. Please log in again.");
+        return;
+
+    }
+
+    const characterName = characterCreationActive
+        ? characterNameInput.value.trim()
+        : playerProfile?.character_name;
+
+    if (!characterName || characterName.length < 2) {
+
+        alert("Your character name must contain at least 2 characters.");
+        return;
+
+    }
+
+    if (characterName.length > 40) {
+
+        alert("Your character name cannot exceed 40 characters.");
+        return;
+
+    }
+
+    const appearance = {};
+
+    Object.entries(selectors).forEach(([property, id]) => {
+
+        appearance[property] = Number(
+            document.getElementById(id).value
+        );
+
+    });
+
+    saveCharacterButton.disabled = true;
+
+    saveCharacterButton.textContent = "SAVING...";
+
+    try {
+
+        const response = await fetch("/api/player/character", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`
+            },
+
+            body: JSON.stringify({
+                character_name: characterName,
+                appearance
+            })
+
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.message || "Unable to save character."
+            );
+
+        }
+
+        // Update local player profile.
+
+        playerProfile = {
+            ...playerProfile,
+            ...result.character
+        };
+
+        window.lagosPlayerProfile = playerProfile;
+
+        // Character creation is now complete.
+
+        characterCreationActive = false;
+
+        characterNameField.hidden = true;
+
+        saveCharacterButton.textContent = "SAVE CHANGES";
+
+        closeButton.style.display = "";
+
+        customiseButton.style.display = "";
+
+        panel.classList.remove("open");
+
+        console.log(
+            "CHARACTER SAVED:",
+            playerProfile
+        );
+
+        console.log(
+            "Welcome to Lagos Legends,",
+            characterName
+        );
+
+    } catch (error) {
+
+        console.error("Character save error:", error);
+
+        alert(error.message);
+
+    } finally {
+
+        saveCharacterButton.disabled = false;
+
+        if (characterCreationActive) {
+
+            saveCharacterButton.textContent = "CREATE CHARACTER";
+
+        } else {
+
+            saveCharacterButton.textContent = "SAVE CHANGES";
+
+        }
+
+    }
+
+});
+
 
 customiseButton.addEventListener("click", () => {
     panel.classList.add("open");
@@ -1390,20 +1660,28 @@ function animate() {
     // INPUT
     // =====================================
 
-    let moveX = joystickX;
-    let moveZ = joystickY;
+    let moveX = characterCreationActive ? 0 : joystickX;
+let moveZ = characterCreationActive ? 0 : joystickY;
+
+    if (!characterCreationActive) {
 
     if (keys["w"] || keys["arrowup"]) moveZ -= 1;
     if (keys["s"] || keys["arrowdown"]) moveZ += 1;
     if (keys["a"] || keys["arrowleft"]) moveX -= 1;
     if (keys["d"] || keys["arrowright"]) moveX += 1;
 
+}
+
     direction.set(moveX, moveZ);
 
     // Sprint lock
-    if (!vehicleSystem.isDriving && sprintLocked) {
-        direction.set(0, -1);
-    }
+    if (
+    !characterCreationActive &&
+    !vehicleSystem.isDriving &&
+    sprintLocked
+) {
+    direction.set(0, -1);
+}
 
     if (direction.length() > 1) {
         direction.normalize();
@@ -1558,7 +1836,8 @@ function animate() {
 
     if (
     vehicleSystem.isDriving ||
-    interiorSystem.isInside
+    interiorSystem.isInside ||
+    characterCreationActive
 ) {
 
     if (world.button) {
