@@ -644,7 +644,291 @@ app.post("/api/player/character", authenticate, async (req, res) => {
     }
 
 });
+// ==========================================
+// BANKING SYSTEM
+// ==========================================
 
+const MAX_TRANSACTION_AMOUNT = 1000000000;
+
+
+// ==========================================
+// DEPOSIT / WITHDRAWAL
+// ==========================================
+
+async function processBankTransaction(req, res, type) {
+
+    const { amount, idempotencyKey } = req.body;
+
+    // Validate amount
+    if (
+        !Number.isSafeInteger(amount) ||
+        amount <= 0 ||
+        amount > MAX_TRANSACTION_AMOUNT
+    ) {
+        return res.status(400).json({
+            status: "error",
+            message: "Enter a valid transaction amount."
+        });
+    }
+
+    // Validate request key
+    if (
+        typeof idempotencyKey !== "string" ||
+        !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotencyKey)
+    ) {
+        return res.status(400).json({
+            status: "error",
+            message: "Invalid transaction request."
+        });
+    }
+
+    const client = await pool.connect();
+
+    try {
+
+        await client.query("BEGIN");
+
+        // Lock the player's wallet to prevent simultaneous
+        // transactions from corrupting the balance.
+
+        const walletResult = await client.query(
+            `SELECT cash, bank
+             FROM player_wallets
+             WHERE player_id = $1
+             FOR UPDATE`,
+            [req.user.id]
+        );
+
+        if (walletResult.rowCount === 0) {
+            throw new Error("Player wallet not found.");
+        }
+
+        // Check whether this request was already processed.
+
+        const previousTransaction = await client.query(
+            `SELECT transaction_type, amount
+             FROM transactions
+             WHERE player_id = $1
+             AND idempotency_key = $2`,
+            [req.user.id, idempotencyKey]
+        );
+
+        if (previousTransaction.rowCount > 0) {
+
+            const previous = previousTransaction.rows[0];
+
+            if (
+                previous.transaction_type !== type ||
+                Number(previous.amount) !== amount
+            ) {
+                await client.query("ROLLBACK");
+
+                return res.status(409).json({
+                    status: "error",
+                    message: "This transaction key has already been used."
+                });
+            }
+
+            const currentWallet = await client.query(
+                `SELECT cash, bank
+                 FROM player_wallets
+                 WHERE player_id = $1`,
+                [req.user.id]
+            );
+
+            await client.query("COMMIT");
+
+            return res.json({
+                status: "success",
+                message: "Transaction already processed.",
+                wallet: currentWallet.rows[0]
+            });
+
+        }
+
+        const wallet = walletResult.rows[0];
+
+        if (type === "deposit") {
+
+            if (BigInt(wallet.cash) < BigInt(amount)) {
+                throw new Error("Insufficient cash balance.");
+            }
+
+            await client.query(
+                `UPDATE player_wallets
+                 SET cash = cash - $1,
+                     bank = bank + $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2`,
+                [amount, req.user.id]
+            );
+
+        } else {
+
+            if (BigInt(wallet.bank) < BigInt(amount)) {
+                throw new Error("Insufficient bank balance.");
+            }
+
+            await client.query(
+                `UPDATE player_wallets
+                 SET bank = bank - $1,
+                     cash = cash + $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2`,
+                [amount, req.user.id]
+            );
+
+        }
+
+        // Record the transaction.
+
+        await client.query(
+            `INSERT INTO transactions
+             (
+                 player_id,
+                 transaction_type,
+                 amount,
+                 source,
+                 destination,
+                 description,
+                 idempotency_key
+             )
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+                req.user.id,
+                type,
+                amount,
+                type === "deposit" ? "cash" : "bank",
+                type === "deposit" ? "bank" : "cash",
+                type === "deposit"
+                    ? "Cash deposited into bank"
+                    : "Cash withdrawn from bank",
+                idempotencyKey
+            ]
+        );
+
+        const updatedWallet = await client.query(
+            `SELECT cash, bank
+             FROM player_wallets
+             WHERE player_id = $1`,
+            [req.user.id]
+        );
+
+        await client.query("COMMIT");
+
+        res.json({
+            status: "success",
+            message: type === "deposit"
+                ? "Deposit successful."
+                : "Withdrawal successful.",
+            wallet: updatedWallet.rows[0]
+        });
+
+    } catch (error) {
+
+        await client.query("ROLLBACK");
+
+        if (error.message === "Insufficient cash balance.") {
+            return res.status(400).json({
+                status: "error",
+                message: error.message
+            });
+        }
+
+        if (error.message === "Insufficient bank balance.") {
+            return res.status(400).json({
+                status: "error",
+                message: error.message
+            });
+        }
+
+        console.error("Banking error:", error.message);
+
+        res.status(500).json({
+            status: "error",
+            message: "Transaction failed. Please try again."
+        });
+
+    } finally {
+
+        client.release();
+
+    }
+
+}
+
+
+// ==========================================
+// DEPOSIT MONEY
+// ==========================================
+
+app.post(
+    "/api/banking/deposit",
+    authenticate,
+    async (req, res) => {
+        await processBankTransaction(req, res, "deposit");
+    }
+);
+
+
+// ==========================================
+// WITHDRAW MONEY
+// ==========================================
+
+app.post(
+    "/api/banking/withdraw",
+    authenticate,
+    async (req, res) => {
+        await processBankTransaction(req, res, "withdrawal");
+    }
+);
+
+
+// ==========================================
+// TRANSACTION HISTORY
+// ==========================================
+
+app.get(
+    "/api/banking/transactions",
+    authenticate,
+    async (req, res) => {
+
+        try {
+
+            const result = await pool.query(
+                `SELECT
+                    id,
+                    transaction_type,
+                    amount,
+                    source,
+                    destination,
+                    description,
+                    created_at
+                 FROM transactions
+                 WHERE player_id = $1
+                 ORDER BY created_at DESC
+                 LIMIT 30`,
+                [req.user.id]
+            );
+
+            res.json({
+                status: "success",
+                transactions: result.rows
+            });
+
+        } catch (error) {
+
+            console.error("Transaction history error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to load transaction history."
+            });
+
+        }
+
+    }
+);
 
 // ==========================================
 // START SERVER
