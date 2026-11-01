@@ -35,6 +35,18 @@ const pool = process.env.DATABASE_URL
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+console.log("SUPABASE CONFIG CHECK:", {
+    urlConfigured: Boolean(SUPABASE_URL),
+    keyConfigured: Boolean(SUPABASE_ANON_KEY),
+    urlHost: SUPABASE_URL
+        ? new URL(SUPABASE_URL).host
+        : "MISSING",
+    keyType: SUPABASE_ANON_KEY?.startsWith("eyJ")
+        ? "Legacy JWT"
+        : SUPABASE_ANON_KEY?.startsWith("sb_publishable_")
+            ? "Publishable key"
+            : "Unknown or missing"
+});
 
 async function supabaseRequest(endpoint, method = "GET", body = null, token = null) {
 
@@ -59,7 +71,33 @@ async function supabaseRequest(endpoint, method = "GET", body = null, token = nu
         }
     );
 
-    const data = await response.json();
+    const responseText = await response.text();
+
+let data;
+
+try {
+    data = JSON.parse(responseText);
+} catch {
+    data = { message: responseText };
+}
+
+if (!response.ok) {
+    console.error("SUPABASE AUTH ERROR:", {
+        endpoint,
+        status: response.status,
+        response: data
+    });
+
+    throw new Error(
+        data.msg ||
+        data.message ||
+        data.error_description ||
+        data.error ||
+        "Supabase authentication failed."
+    );
+}
+
+return data;
 
     if (!response.ok) {
         throw new Error(
