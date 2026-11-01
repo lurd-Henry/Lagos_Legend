@@ -297,11 +297,13 @@ async function enterGame() {
 
     }
 
-    window.dispatchEvent(
-        new CustomEvent("lagos:authenticated", {
-            detail: profile.player
-        })
-    );
+    window.lagosPlayerProfile = profile.player;
+
+window.dispatchEvent(
+    new CustomEvent("lagos:authenticated", {
+        detail: profile.player
+    })
+);
 
 }
 
