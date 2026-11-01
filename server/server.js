@@ -33,8 +33,50 @@ const pool = process.env.DATABASE_URL
 // SUPABASE CONFIGURATION
 // ==========================================
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = (
+    process.env.SUPABASE_URL || ""
+).trim().replace(/\/+$/, "");
+
+const SUPABASE_ANON_KEY = (
+    process.env.SUPABASE_ANON_KEY || ""
+).trim();
+// ==========================================
+// SUPABASE CONFIGURATION DIAGNOSTICS
+// ==========================================
+
+let urlProjectRef = null;
+let keyProjectRef = null;
+
+try {
+    urlProjectRef = new URL(SUPABASE_URL).hostname.split(".")[0];
+} catch {
+    console.error("SUPABASE_URL is invalid.");
+}
+
+try {
+    const parts = SUPABASE_ANON_KEY.split(".");
+
+    if (parts.length === 3) {
+        const payload = JSON.parse(
+            Buffer.from(parts[1], "base64url").toString()
+        );
+
+        keyProjectRef = payload.ref || null;
+    }
+} catch {
+    console.log("Could not decode legacy API key.");
+}
+
+console.log("SUPABASE CONFIGURATION:", {
+    urlConfigured: Boolean(SUPABASE_URL),
+    keyConfigured: Boolean(SUPABASE_ANON_KEY),
+    urlProjectRef,
+    keyProjectRef,
+    projectsMatch: urlProjectRef && keyProjectRef
+        ? urlProjectRef === keyProjectRef
+        : "Cannot verify"
+});
+
 console.log("SUPABASE CONFIG CHECK:", {
     urlConfigured: Boolean(SUPABASE_URL),
     keyConfigured: Boolean(SUPABASE_ANON_KEY),
