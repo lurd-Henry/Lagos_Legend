@@ -263,8 +263,7 @@ this.savedFog = null;
             0
         );
 
-        // Interior lights
-        // =====================================
+      // =====================================
 // INTERIOR LIGHTING
 // =====================================
 
@@ -284,9 +283,6 @@ const light = new THREE.PointLight(
 light.position.set(0, 4.3, 0);
 
 this.interiorGroup.add(light);
-        light.position.set(0, 4.3, 0);
-
-        this.interiorGroup.add(light);
 
         // Windows
         this.createWindow(-5, 2.8, -7.75);
@@ -384,15 +380,49 @@ restoreExterior() {
 
     addFurniture(name, x, z, width, depth) {
 
-        this.furniture.push({
-            name,
-            x,
-            z,
-            width,
-            depth
-        });
+    this.furniture.push({
+        name,
+        x,
+        z,
+        width,
+        depth
+    });
+
+    // Furniture collision boundary
+    this.colliders.push({
+        minX: x - width / 2,
+        maxX: x + width / 2,
+        minZ: z - depth / 2,
+        maxZ: z + depth / 2
+    });
+
+}
+    // =====================================
+// CHECK FURNITURE COLLISION
+// =====================================
+
+collidesWithFurniture(x, z) {
+
+    const playerRadius = 0.45;
+
+    for (const box of this.colliders) {
+
+        if (
+            x + playerRadius > box.minX &&
+            x - playerRadius < box.maxX &&
+            z + playerRadius > box.minZ &&
+            z - playerRadius < box.maxZ
+        ) {
+
+            return true;
+
+        }
 
     }
+
+    return false;
+
+}
 
     // =====================================
     // SOFA
@@ -803,49 +833,68 @@ exit() {
 
 }
 
-    // =====================================
-    // INTERIOR COLLISION
-    // =====================================
+   // =====================================
+// INTERIOR COLLISION + PLAYER MOVEMENT
+// =====================================
 
-    movePlayer(player, moveX, moveZ, speed, delta) {
+movePlayer(player, moveX, moveZ, speed, delta) {
 
-        if (!this.isInside) return;
+    if (!this.isInside) return;
 
-        const nextX =
-            player.position.x + moveX * speed * delta;
+    const minX = 991.5;
+    const maxX = 1008.5;
 
-        const nextZ =
-            player.position.z + moveZ * speed * delta;
+    const minZ = 992.5;
+    const maxZ = 1007;
 
-        const minX = 991.5;
-        const maxX = 1008.5;
+    const nextX =
+        player.position.x + moveX * speed * delta;
 
-        const minZ = 992.5;
-        const maxZ = 1007;
+    const nextZ =
+        player.position.z + moveZ * speed * delta;
 
-        player.position.x = THREE.MathUtils.clamp(
-            nextX,
-            minX,
-            maxX
-        );
+    // Try horizontal movement first
+    const clampedX = THREE.MathUtils.clamp(
+        nextX,
+        minX,
+        maxX
+    );
 
-        player.position.z = THREE.MathUtils.clamp(
-            nextZ,
-            minZ,
-            maxZ
-        );
+    if (!this.collidesWithFurniture(
+        clampedX - 1000,
+        player.position.z - 1000
+    )) {
 
-        if (moveX !== 0 || moveZ !== 0) {
-
-            player.rotation.y = Math.atan2(
-                moveX,
-                moveZ
-            );
-
-        }
+        player.position.x = clampedX;
 
     }
 
+    // Try vertical movement separately
+    const clampedZ = THREE.MathUtils.clamp(
+        nextZ,
+        minZ,
+        maxZ
+    );
+
+    if (!this.collidesWithFurniture(
+        player.position.x - 1000,
+        clampedZ - 1000
+    )) {
+
+        player.position.z = clampedZ;
+
+    }
+
+    if (moveX !== 0 || moveZ !== 0) {
+
+        player.rotation.y = Math.atan2(
+            moveX,
+            moveZ
+        );
+
+    }
+
+}
     // =====================================
     // FURNITURE INTERACTIONS
     // =====================================
