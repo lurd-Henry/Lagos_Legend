@@ -43,6 +43,7 @@ async function supabaseRequest(endpoint, method = "GET", body = null, token = nu
         "apikey": SUPABASE_ANON_KEY
     };
 
+    // Only send Authorization when we have an actual user access token.
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }
@@ -52,15 +53,21 @@ async function supabaseRequest(endpoint, method = "GET", body = null, token = nu
         {
             method,
             headers,
-            ...(body ? { body: JSON.stringify(body) } : {})
+            ...(body ? {
+                body: JSON.stringify(body)
+            } : {})
         }
     );
 
-    const data = await response.json().catch(() => ({}));
+    const data = await response.json();
 
     if (!response.ok) {
         throw new Error(
-            data.msg || data.message || data.error_description || "Authentication failed."
+            data.msg ||
+            data.message ||
+            data.error_description ||
+            data.error ||
+            "Supabase authentication failed."
         );
     }
 
