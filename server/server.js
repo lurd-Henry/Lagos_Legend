@@ -115,33 +115,21 @@ async function supabaseRequest(endpoint, method = "GET", body = null, token = nu
 
     const responseText = await response.text();
 
-let data;
+    let data;
 
-try {
-    data = JSON.parse(responseText);
-} catch {
-    data = { message: responseText };
-}
-
-if (!response.ok) {
-    console.error("SUPABASE AUTH ERROR:", {
-        endpoint,
-        status: response.status,
-        response: data
-    });
-
-    throw new Error(
-        data.msg ||
-        data.message ||
-        data.error_description ||
-        data.error ||
-        "Supabase authentication failed."
-    );
-}
-
-return data;
+    try {
+        data = JSON.parse(responseText);
+    } catch {
+        data = { message: responseText };
+    }
 
     if (!response.ok) {
+        console.error("SUPABASE AUTH ERROR:", {
+            endpoint,
+            status: response.status,
+            response: data
+        });
+
         throw new Error(
             data.msg ||
             data.message ||
@@ -153,7 +141,6 @@ return data;
 
     return data;
 }
-
 
 // ==========================================
 // AUTHENTICATION MIDDLEWARE
@@ -552,7 +539,45 @@ app.get("/api/player/me", authenticate, async (req, res) => {
     }
 
 });
+// ==========================================
+// GET PLAYER WALLET
+// ==========================================
 
+app.get("/api/banking/wallet", authenticate, async (req, res) => {
+
+    try {
+
+        const result = await pool.query(
+            `SELECT cash, bank
+             FROM player_wallets
+             WHERE player_id = $1`,
+            [req.user.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "Wallet not found."
+            });
+        }
+
+        res.json({
+            status: "success",
+            wallet: result.rows[0]
+        });
+
+    } catch (error) {
+
+        console.error("Wallet error:", error.message);
+
+        res.status(500).json({
+            status: "error",
+            message: "Unable to retrieve wallet."
+        });
+
+    }
+
+});
 
 // ==========================================
 // SAVE CHARACTER
@@ -929,7 +954,264 @@ app.get(
 
     }
 );
+// ==========================================
+// PLAYER-TO-PLAYER BANK TRANSFERS
+// ==========================================
 
+app.post(
+    "/api/banking/transfer",
+    authenticate,
+    async (req, res) => {
+
+        const { username, amount, idempotencyKey } = req.body;
+
+        // Validate recipient username
+        if (
+            typeof username !== "string" ||
+            !/^[a-zA-Z0-9_]{3,24}$/.test(username)
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Enter a valid recipient username."
+            });
+        }
+
+        // Validate amount
+        if (
+            !Number.isSafeInteger(amount) ||
+            amount <= 0 ||
+            amount > MAX_TRANSACTION_AMOUNT
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Enter a valid transfer amount."
+            });
+        }
+
+        // Validate request key
+        if (
+            typeof idempotencyKey !== "string" ||
+            !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotencyKey)
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid transfer request."
+            });
+        }
+
+        const client = await pool.connect();
+
+        try {
+
+            await client.query("BEGIN");
+
+            // Find recipient
+            const recipientResult = await client.query(
+                `SELECT id, username
+                 FROM players
+                 WHERE LOWER(username) = LOWER($1)`,
+                [username]
+            );
+
+            if (recipientResult.rowCount === 0) {
+                throw new Error("Recipient not found.");
+            }
+
+            const recipient = recipientResult.rows[0];
+
+            if (recipient.id === req.user.id) {
+                throw new Error("You cannot transfer money to yourself.");
+            }
+
+            // Lock both wallets in a consistent order.
+            // This reduces the risk of deadlocks.
+
+            const walletIds = [
+                req.user.id,
+                recipient.id
+            ].sort();
+
+            const walletsResult = await client.query(
+                `SELECT player_id, cash, bank
+                 FROM player_wallets
+                 WHERE player_id = ANY($1::uuid[])
+                 ORDER BY player_id
+                 FOR UPDATE`,
+                [walletIds]
+            );
+
+            if (walletsResult.rowCount !== 2) {
+                throw new Error("One of the player wallets could not be found.");
+            }
+
+            const senderWallet = walletsResult.rows.find(
+                wallet => wallet.player_id === req.user.id
+            );
+
+            if (!senderWallet) {
+                throw new Error("Your wallet could not be found.");
+            }
+
+            // Check whether this request was already processed.
+
+            const previous = await client.query(
+                `SELECT transaction_type, amount, description
+                 FROM transactions
+                 WHERE player_id = $1
+                 AND idempotency_key = $2`,
+                [req.user.id, idempotencyKey]
+            );
+
+            if (previous.rowCount > 0) {
+
+                const transaction = previous.rows[0];
+
+                if (
+                    transaction.transaction_type !== "transfer" ||
+                    Number(transaction.amount) !== amount ||
+                    transaction.description !== `Transfer to @${recipient.username}`
+                ) {
+                    await client.query("ROLLBACK");
+
+                    return res.status(409).json({
+                        status: "error",
+                        message: "This request key has already been used."
+                    });
+                }
+
+                const currentWallet = await client.query(
+                    `SELECT cash, bank
+                     FROM player_wallets
+                     WHERE player_id = $1`,
+                    [req.user.id]
+                );
+
+                await client.query("COMMIT");
+
+                return res.json({
+                    status: "success",
+                    message: "Transfer already processed.",
+                    wallet: currentWallet.rows[0]
+                });
+
+            }
+
+            // Check sender balance
+
+            if (BigInt(senderWallet.bank) < BigInt(amount)) {
+                throw new Error("Insufficient bank balance.");
+            }
+
+            // Deduct from sender and credit recipient
+
+            await client.query(
+                `UPDATE player_wallets
+                 SET bank = bank - $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2`,
+                [amount, req.user.id]
+            );
+
+            await client.query(
+                `UPDATE player_wallets
+                 SET bank = bank + $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2`,
+                [amount, recipient.id]
+            );
+
+            // Record sender transaction
+
+            await client.query(
+                `INSERT INTO transactions
+                 (
+                    player_id,
+                    transaction_type,
+                    amount,
+                    source,
+                    destination,
+                    description,
+                    idempotency_key
+                 )
+                 VALUES ($1, 'transfer', $2, 'bank', 'player', $3, $4)`,
+                [
+                    req.user.id,
+                    amount,
+                    `Transfer to @${recipient.username}`,
+                    idempotencyKey
+                ]
+            );
+
+            // Record recipient transaction
+
+            await client.query(
+                `INSERT INTO transactions
+                 (
+                    player_id,
+                    transaction_type,
+                    amount,
+                    source,
+                    destination,
+                    description
+                 )
+                 VALUES ($1, 'transfer', $2, 'player', 'bank', $3)`,
+                [
+                    recipient.id,
+                    amount,
+                    `Transfer received from @${senderWallet.player_id}`
+                ]
+            );
+
+            // Get updated sender wallet
+
+            const updatedWallet = await client.query(
+                `SELECT cash, bank
+                 FROM player_wallets
+                 WHERE player_id = $1`,
+                [req.user.id]
+            );
+
+            await client.query("COMMIT");
+
+            res.json({
+                status: "success",
+                message: `Successfully transferred ₦${amount.toLocaleString("en-NG")} to @${recipient.username}.`,
+                recipient: recipient.username,
+                wallet: updatedWallet.rows[0]
+            });
+
+        } catch (error) {
+
+            await client.query("ROLLBACK");
+
+            if (
+                error.message === "Recipient not found." ||
+                error.message === "You cannot transfer money to yourself." ||
+                error.message === "Insufficient bank balance." ||
+                error.message === "Your wallet could not be found." ||
+                error.message === "One of the player wallets could not be found."
+            ) {
+                return res.status(400).json({
+                    status: "error",
+                    message: error.message
+                });
+            }
+
+            console.error("Transfer error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Transfer failed. Please try again."
+            });
+
+        } finally {
+
+            client.release();
+
+        }
+
+    }
+);
 // ==========================================
 // START SERVER
 // ==========================================
