@@ -1212,6 +1212,517 @@ app.post(
 
     }
 );
+
+// ==========================================
+// ACTIVE PLAY HUNGER SYSTEM
+// ==========================================
+
+app.post(
+    "/api/player/heartbeat",
+    authenticate,
+    async (req, res) => {
+
+        const client = await pool.connect();
+
+        try {
+
+            await client.query("BEGIN");
+
+            const result = await client.query(
+                `SELECT hunger, active_seconds, last_active_at
+                 FROM player_needs
+                 WHERE player_id = $1
+                 FOR UPDATE`,
+                [req.user.id]
+            );
+
+            if (result.rowCount === 0) {
+                throw new Error("Player needs record not found.");
+            }
+
+            const needs = result.rows[0];
+
+            const now = Date.now();
+
+            let elapsedSeconds = 0;
+
+            if (needs.last_active_at) {
+
+                const elapsed =
+                    (now - new Date(needs.last_active_at).getTime()) / 1000;
+
+                // Only count recent heartbeats.
+                // Long gaps are treated as offline time.
+                if (elapsed > 0 && elapsed <= 120) {
+                    elapsedSeconds = Math.floor(elapsed);
+                }
+
+            }
+
+            let accumulatedSeconds =
+                Number(needs.active_seconds) + elapsedSeconds;
+
+            const hungerPoints = Math.floor(
+                accumulatedSeconds / 7200
+            );
+
+            const newHunger = Math.max(
+                0,
+                Number(needs.hunger) - hungerPoints
+            );
+
+            accumulatedSeconds %= 7200;
+
+            const updated = await client.query(
+                `UPDATE player_needs
+                 SET hunger = $1,
+                     active_seconds = $2,
+                     last_active_at = NOW(),
+                     updated_at = NOW()
+                 WHERE player_id = $3
+                 RETURNING hunger, active_seconds`,
+                [
+                    newHunger,
+                    accumulatedSeconds,
+                    req.user.id
+                ]
+            );
+
+            await client.query("COMMIT");
+
+            res.json({
+                status: "success",
+                hunger: updated.rows[0].hunger,
+                active_seconds: Number(updated.rows[0].active_seconds)
+            });
+
+        } catch (error) {
+
+            await client.query("ROLLBACK");
+
+            console.error("Hunger heartbeat error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to update player hunger."
+            });
+
+        } finally {
+
+            client.release();
+
+        }
+
+    }
+);
+// ==========================================
+// BUY FOOD
+// ==========================================
+
+app.post(
+    "/api/food/buy",
+    authenticate,
+    async (req, res) => {
+
+        const { itemId, quantity, idempotencyKey } = req.body;
+
+        if (
+            !Number.isSafeInteger(itemId) ||
+            itemId <= 0 ||
+            !Number.isSafeInteger(quantity) ||
+            quantity < 1 ||
+            quantity > 20
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid food selection."
+            });
+        }
+
+        if (
+            typeof idempotencyKey !== "string" ||
+            !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotencyKey)
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid purchase request."
+            });
+        }
+
+        const client = await pool.connect();
+
+        try {
+
+            await client.query("BEGIN");
+
+            // Find food item.
+
+            const itemResult = await client.query(
+                `SELECT id, name, price
+                 FROM items
+                 WHERE id = $1
+                 AND category = 'food'`,
+                [itemId]
+            );
+
+            if (itemResult.rowCount === 0) {
+                throw new Error("Food item not found.");
+            }
+
+            const item = itemResult.rows[0];
+
+            const total = BigInt(item.price) * BigInt(quantity);
+
+            if (total > 1000000000n) {
+                throw new Error("Purchase amount is too large.");
+            }
+
+            const totalAmount = total.toString();
+
+            // Lock wallet.
+
+            const walletResult = await client.query(
+                `SELECT cash, bank
+                 FROM player_wallets
+                 WHERE player_id = $1
+                 FOR UPDATE`,
+                [req.user.id]
+            );
+
+            if (walletResult.rowCount === 0) {
+                throw new Error("Wallet not found.");
+            }
+
+            // Check duplicate request.
+
+            const previous = await client.query(
+                `SELECT transaction_type, amount, description
+                 FROM transactions
+                 WHERE player_id = $1
+                 AND idempotency_key = $2`,
+                [req.user.id, idempotencyKey]
+            );
+
+            const description = `Purchased ${quantity}x ${item.name}`;
+
+            if (previous.rowCount > 0) {
+
+                const transaction = previous.rows[0];
+
+                if (
+                    transaction.transaction_type !== "purchase" ||
+                    BigInt(transaction.amount) !== total ||
+                    transaction.description !== description
+                ) {
+                    await client.query("ROLLBACK");
+
+                    return res.status(409).json({
+                        status: "error",
+                        message: "This request key has already been used."
+                    });
+                }
+
+                const currentWallet = await client.query(
+                    `SELECT cash, bank
+                     FROM player_wallets
+                     WHERE player_id = $1`,
+                    [req.user.id]
+                );
+
+                await client.query("COMMIT");
+
+                return res.json({
+                    status: "success",
+                    message: "Purchase already processed.",
+                    wallet: currentWallet.rows[0]
+                });
+
+            }
+
+            // Deduct cash only if sufficient.
+
+            const payment = await client.query(
+                `UPDATE player_wallets
+                 SET cash = cash - $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2
+                 AND cash >= $1
+                 RETURNING cash, bank`,
+                [totalAmount, req.user.id]
+            );
+
+            if (payment.rowCount === 0) {
+                throw new Error("Insufficient cash balance.");
+            }
+
+            // Add food to inventory.
+
+            await client.query(
+                `INSERT INTO player_inventory
+                 (player_id, item_id, quantity)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (player_id, item_id)
+                 DO UPDATE SET
+                    quantity = player_inventory.quantity + EXCLUDED.quantity,
+                    updated_at = NOW()`,
+                [req.user.id, itemId, quantity]
+            );
+
+            // Record purchase.
+
+            await client.query(
+                `INSERT INTO transactions
+                 (
+                    player_id,
+                    transaction_type,
+                    amount,
+                    source,
+                    destination,
+                    description,
+                    idempotency_key
+                 )
+                 VALUES ($1, 'purchase', $2, 'cash', 'inventory', $3, $4)`,
+                [
+                    req.user.id,
+                    totalAmount,
+                    description,
+                    idempotencyKey
+                ]
+            );
+
+            await client.query("COMMIT");
+
+            res.json({
+                status: "success",
+                message: `${quantity}x ${item.name} purchased successfully.`,
+                wallet: payment.rows[0]
+            });
+
+        } catch (error) {
+
+            await client.query("ROLLBACK");
+
+            if (
+                error.message === "Food item not found." ||
+                error.message === "Insufficient cash balance." ||
+                error.message === "Wallet not found." ||
+                error.message === "Purchase amount is too large."
+            ) {
+                return res.status(400).json({
+                    status: "error",
+                    message: error.message
+                });
+            }
+
+            console.error("Food purchase error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Purchase failed."
+            });
+
+        } finally {
+
+            client.release();
+
+        }
+
+    }
+);
+// ==========================================
+// PLAYER INVENTORY
+// ==========================================
+
+app.get(
+    "/api/inventory",
+    authenticate,
+    async (req, res) => {
+
+        try {
+
+            const result = await pool.query(
+                `SELECT
+                    i.id AS item_id,
+                    i.name,
+                    i.description,
+                    i.price,
+                    i.hunger_restore,
+                    pi.quantity
+                 FROM player_inventory pi
+                 JOIN items i ON i.id = pi.item_id
+                 WHERE pi.player_id = $1
+                 ORDER BY i.name ASC`,
+                [req.user.id]
+            );
+
+            res.json({
+                status: "success",
+                inventory: result.rows
+            });
+
+        } catch (error) {
+
+            console.error("Inventory error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to load inventory."
+            });
+
+        }
+
+    }
+);
+// ==========================================
+// EAT FOOD
+// ==========================================
+
+app.post(
+    "/api/inventory/eat",
+    authenticate,
+    async (req, res) => {
+
+        const { itemId, quantity = 1 } = req.body;
+
+        if (
+            !Number.isSafeInteger(itemId) ||
+            itemId <= 0 ||
+            !Number.isSafeInteger(quantity) ||
+            quantity < 1 ||
+            quantity > 10
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid food selection."
+            });
+        }
+
+        const client = await pool.connect();
+
+        try {
+
+            await client.query("BEGIN");
+
+            const inventoryResult = await client.query(
+                `SELECT
+                    pi.quantity,
+                    i.name,
+                    i.hunger_restore
+                 FROM player_inventory pi
+                 JOIN items i ON i.id = pi.item_id
+                 WHERE pi.player_id = $1
+                 AND pi.item_id = $2
+                 AND i.category = 'food'
+                 FOR UPDATE OF pi`,
+                [req.user.id, itemId]
+            );
+
+            if (inventoryResult.rowCount === 0) {
+                throw new Error("You do not have this food.");
+            }
+
+            const item = inventoryResult.rows[0];
+
+            if (item.quantity < quantity) {
+                throw new Error("Not enough food in your inventory.");
+            }
+
+            const needsResult = await client.query(
+                `SELECT hunger
+                 FROM player_needs
+                 WHERE player_id = $1
+                 FOR UPDATE`,
+                [req.user.id]
+            );
+
+            if (needsResult.rowCount === 0) {
+                throw new Error("Player hunger record not found.");
+            }
+
+            const currentHunger = Number(
+                needsResult.rows[0].hunger
+            );
+
+            const restored = Number(item.hunger_restore) * quantity;
+
+            const newHunger = Math.min(
+                100,
+                currentHunger + restored
+            );
+
+            // Consume inventory.
+
+            if (item.quantity === quantity) {
+
+                await client.query(
+                    `DELETE FROM player_inventory
+                     WHERE player_id = $1
+                     AND item_id = $2`,
+                    [req.user.id, itemId]
+                );
+
+            } else {
+
+                await client.query(
+                    `UPDATE player_inventory
+                     SET quantity = quantity - $1,
+                         updated_at = NOW()
+                     WHERE player_id = $2
+                     AND item_id = $3`,
+                    [quantity, req.user.id, itemId]
+                );
+
+            }
+
+            // Restore hunger.
+
+            await client.query(
+                `UPDATE player_needs
+                 SET hunger = $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2`,
+                [newHunger, req.user.id]
+            );
+
+            await client.query("COMMIT");
+
+            res.json({
+                status: "success",
+                message: `You ate ${quantity}x ${item.name}.`,
+                hunger: newHunger
+            });
+
+        } catch (error) {
+
+            await client.query("ROLLBACK");
+
+            if (
+                error.message === "You do not have this food." ||
+                error.message === "Not enough food in your inventory." ||
+                error.message === "Player hunger record not found."
+            ) {
+                return res.status(400).json({
+                    status: "error",
+                    message: error.message
+                });
+            }
+
+            console.error("Eating error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to consume food."
+            });
+
+        } finally {
+
+            client.release();
+
+        }
+
+    }
+);
+
 // ==========================================
 // START SERVER
 // ==========================================
