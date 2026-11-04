@@ -162,6 +162,89 @@ if (window.lagosPlayerProfile) {
 
 }
 
+// ==========================================
+// HUNGER SYSTEM CONNECTION
+// ==========================================
+
+const HUNGER_SESSION_KEY = "lagos_legends_session";
+
+function getGameAccessToken() {
+
+    try {
+
+        const session = JSON.parse(
+            localStorage.getItem(HUNGER_SESSION_KEY)
+        );
+
+        return session?.access_token || null;
+
+    } catch {
+
+        return null;
+
+    }
+
+}
+
+
+async function sendHungerHeartbeat() {
+
+    const token = getGameAccessToken();
+
+    if (!token) return;
+
+    try {
+
+        const response = await fetch(
+            "/api/player/heartbeat",
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+
+            // Update the existing hunger HUD.
+            if (window.lagosHUD?.setHunger) {
+                window.lagosHUD.setHunger(data.hunger);
+            }
+
+        }
+
+    } catch (error) {
+
+        console.warn("Hunger synchronisation failed:", error);
+
+    }
+
+}
+
+
+// Send heartbeat every 60 seconds.
+// Hidden tabs do not send active-play heartbeats.
+
+setInterval(() => {
+
+    if (document.visibilityState === "visible") {
+        sendHungerHeartbeat();
+    }
+
+}, 60000);
+
+
+// Start tracking after authentication.
+
+window.addEventListener("lagos:authenticated", () => {
+    sendHungerHeartbeat();
+});
 
 // =====================================
 // SERVER TIME
