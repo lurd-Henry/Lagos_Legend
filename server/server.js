@@ -1764,6 +1764,436 @@ app.get(
 
     }
 );
+// ==========================================
+// START JOB
+// ==========================================
+
+app.post(
+    "/api/jobs/start",
+    authenticate,
+    async (req, res) => {
+
+        const { jobId } = req.body;
+
+        if (
+            !Number.isSafeInteger(jobId) ||
+            jobId <= 0
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid job."
+            });
+        }
+
+        try {
+
+            const jobResult = await pool.query(
+                `SELECT id, name, job_type, base_pay
+                 FROM jobs
+                 WHERE id = $1
+                 AND is_active = TRUE`,
+                [jobId]
+            );
+
+            if (jobResult.rowCount === 0) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "Job not found."
+                });
+            }
+
+            const job = jobResult.rows[0];
+
+            await pool.query(
+                `INSERT INTO player_jobs
+                 (
+                    player_id,
+                    job_id,
+                    current_shift_started_at,
+                    updated_at
+                 )
+                 VALUES ($1, $2, NOW(), NOW())
+
+                 ON CONFLICT (player_id)
+                 DO UPDATE SET
+                    job_id = EXCLUDED.job_id,
+                    current_shift_started_at = NOW(),
+                    updated_at = NOW()`,
+                [req.user.id, job.id]
+            );
+
+            res.json({
+                status: "success",
+                message: `You started working as a ${job.name}.`,
+                job: {
+                    id: job.id,
+                    name: job.name,
+                    job_type: job.job_type,
+                    base_pay: job.base_pay
+                }
+            });
+
+        } catch (error) {
+
+            console.error("Start job error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to start job."
+            });
+
+        }
+
+    }
+);
+// ==========================================
+// CURRENT PLAYER JOB
+// ==========================================
+
+app.get(
+    "/api/jobs/current",
+    authenticate,
+    async (req, res) => {
+
+        try {
+
+            const result = await pool.query(
+                `SELECT
+                    pj.job_id,
+                    pj.total_earned,
+                    pj.completed_jobs,
+                    pj.current_shift_started_at,
+                    j.name,
+                    j.job_type,
+                    j.base_pay
+                 FROM player_jobs pj
+                 LEFT JOIN jobs j
+                    ON j.id = pj.job_id
+                 WHERE pj.player_id = $1`,
+                [req.user.id]
+            );
+
+            res.json({
+                status: "success",
+                job: result.rowCount > 0
+                    ? result.rows[0]
+                    : null
+            });
+
+        } catch (error) {
+
+            console.error("Current job error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to load current job."
+            });
+
+        }
+
+    }
+);
+// ==========================================
+// COMPLETE JOB
+// ==========================================
+
+app.post(
+    "/api/jobs/complete",
+    authenticate,
+    async (req, res) => {
+
+        const { idempotencyKey } = req.body;
+
+        if (
+            typeof idempotencyKey !== "string" ||
+            !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotencyKey)
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid job completion request."
+            });
+        }
+
+        const client = await pool.connect();
+
+        try {
+
+            await client.query("BEGIN");
+
+            // Get player's current job.
+
+            const jobResult = await client.query(
+                `SELECT
+                    pj.job_id,
+                    j.name,
+                    j.job_type,
+                    j.base_pay
+                 FROM player_jobs pj
+                 JOIN jobs j
+                    ON j.id = pj.job_id
+                 WHERE pj.player_id = $1
+                 AND j.is_active = TRUE
+                 FOR UPDATE`,
+                [req.user.id]
+            );
+
+            if (jobResult.rowCount === 0) {
+                throw new Error("You are not currently working a job.");
+            }
+
+            const job = jobResult.rows[0];
+
+            // Prevent duplicate completion.
+
+            const previous = await client.query(
+                `SELECT
+                    transaction_type,
+                    amount,
+                    description
+                 FROM transactions
+                 WHERE player_id = $1
+                 AND idempotency_key = $2`,
+                [req.user.id, idempotencyKey]
+            );
+
+            if (previous.rowCount > 0) {
+
+                const transaction = previous.rows[0];
+
+                if (
+                    transaction.transaction_type !== "salary" ||
+                    BigInt(transaction.amount) !== BigInt(job.base_pay)
+                ) {
+                    await client.query("ROLLBACK");
+
+                    return res.status(409).json({
+                        status: "error",
+                        message: "This completion request has already been used."
+                    });
+                }
+
+                const wallet = await client.query(
+                    `SELECT cash, bank
+                     FROM player_wallets
+                     WHERE player_id = $1`,
+                    [req.user.id]
+                );
+
+                await client.query("COMMIT");
+
+                return res.json({
+                    status: "success",
+                    message: "Job completion already processed.",
+                    earnings: job.base_pay,
+                    wallet: wallet.rows[0]
+                });
+
+            }
+
+            // Pay player.
+
+            const walletResult = await client.query(
+                `UPDATE player_wallets
+                 SET cash = cash + $1,
+                     updated_at = NOW()
+                 WHERE player_id = $2
+                 RETURNING cash, bank`,
+                [job.base_pay, req.user.id]
+            );
+
+            if (walletResult.rowCount === 0) {
+                throw new Error("Player wallet not found.");
+            }
+
+            // Update job statistics.
+
+            await client.query(
+                `UPDATE player_jobs
+                 SET total_earned = total_earned + $1,
+                     completed_jobs = completed_jobs + 1,
+                     updated_at = NOW()
+                 WHERE player_id = $2`,
+                [job.base_pay, req.user.id]
+            );
+
+            // Record salary transaction.
+
+            await client.query(
+                `INSERT INTO transactions
+                 (
+                    player_id,
+                    transaction_type,
+                    amount,
+                    source,
+                    destination,
+                    description,
+                    idempotency_key
+                 )
+                 VALUES
+                 (
+                    $1,
+                    'salary',
+                    $2,
+                    'job',
+                    'cash',
+                    $3,
+                    $4
+                 )`,
+                [
+                    req.user.id,
+                    job.base_pay,
+                    `${job.name} completed`,
+                    idempotencyKey
+                ]
+            );
+
+            await client.query("COMMIT");
+
+            res.json({
+                status: "success",
+                message: `Job completed. You earned ₦${Number(job.base_pay).toLocaleString("en-NG")}.`,
+                job: {
+                    name: job.name,
+                    type: job.job_type
+                },
+                earnings: job.base_pay,
+                wallet: walletResult.rows[0]
+            });
+
+        } catch (error) {
+
+            await client.query("ROLLBACK");
+
+            if (
+                error.message ===
+                "You are not currently working a job."
+            ) {
+                return res.status(400).json({
+                    status: "error",
+                    message: error.message
+                });
+            }
+
+            if (
+                error.message ===
+                "Player wallet not found."
+            ) {
+                return res.status(404).json({
+                    status: "error",
+                    message: error.message
+                });
+            }
+
+            console.error("Job completion error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to complete job."
+            });
+
+        } finally {
+
+            client.release();
+
+        }
+
+    }
+);
+// ==========================================
+// QUIT CURRENT JOB
+// ==========================================
+
+app.post(
+    "/api/jobs/quit",
+    authenticate,
+    async (req, res) => {
+
+        try {
+
+            const result = await pool.query(
+                `UPDATE player_jobs
+                 SET job_id = NULL,
+                     current_shift_started_at = NULL,
+                     updated_at = NOW()
+                 WHERE player_id = $1
+                 RETURNING player_id`,
+                [req.user.id]
+            );
+
+            if (result.rowCount === 0) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "No job profile found."
+                });
+            }
+
+            res.json({
+                status: "success",
+                message: "You left your current job."
+            });
+
+        } catch (error) {
+
+            console.error("Quit job error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to leave job."
+            });
+
+        }
+
+    }
+);
+// ==========================================
+// JOB STATISTICS
+// ==========================================
+
+app.get(
+    "/api/jobs/stats",
+    authenticate,
+    async (req, res) => {
+
+        try {
+
+            const result = await pool.query(
+                `SELECT
+                    pj.total_earned,
+                    pj.completed_jobs,
+                    j.name,
+                    j.job_type
+                 FROM player_jobs pj
+                 LEFT JOIN jobs j
+                    ON j.id = pj.job_id
+                 WHERE pj.player_id = $1`,
+                [req.user.id]
+            );
+
+            res.json({
+                status: "success",
+                stats: result.rowCount > 0
+                    ? result.rows[0]
+                    : {
+                        total_earned: 0,
+                        completed_jobs: 0,
+                        name: null,
+                        job_type: null
+                    }
+            });
+
+        } catch (error) {
+
+            console.error("Job stats error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to load job statistics."
+            });
+
+        }
+
+    }
+);
 
 // ==========================================
 // START SERVER
