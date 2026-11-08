@@ -1722,6 +1722,48 @@ app.post(
 
     }
 );
+// ==========================================
+// JOB CATALOGUE
+// ==========================================
+
+app.get(
+    "/api/jobs",
+    authenticate,
+    async (req, res) => {
+
+        try {
+
+            const result = await pool.query(
+                `SELECT
+                    id,
+                    name,
+                    job_type,
+                    description,
+                    base_pay,
+                    is_active
+                 FROM jobs
+                 WHERE is_active = TRUE
+                 ORDER BY id ASC`
+            );
+
+            res.json({
+                status: "success",
+                jobs: result.rows
+            });
+
+        } catch (error) {
+
+            console.error("Jobs catalogue error:", error.message);
+
+            res.status(500).json({
+                status: "error",
+                message: "Unable to load jobs."
+            });
+
+        }
+
+    }
+);
 
 // ==========================================
 // START SERVER
