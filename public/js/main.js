@@ -213,9 +213,9 @@ async function sendHungerHeartbeat() {
         if (data.status === "success") {
 
             // Update the existing hunger HUD.
-            if (window.lagosHUD?.setHunger) {
-                window.lagosHUD.setHunger(data.hunger);
-            }
+            if (window.lagosHUD?.updateHunger) {
+    window.lagosHUD.updateHunger(data.hunger);
+}
 
         }
 
