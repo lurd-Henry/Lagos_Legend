@@ -245,6 +245,453 @@ setInterval(() => {
 window.addEventListener("lagos:authenticated", () => {
     sendHungerHeartbeat();
 });
+/* ==========================================
+   STAGE 8.8 — JOB SYSTEM
+========================================== */
+
+const JOB_SESSION_KEY = "lagos_legends_session";
+
+
+/*
+ * Get the current authenticated access token.
+ */
+function getJobAccessToken() {
+
+    try {
+
+        const session = JSON.parse(
+            localStorage.getItem(JOB_SESSION_KEY)
+        );
+
+        return session?.access_token || null;
+
+    } catch {
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Generate a unique idempotency key.
+ *
+ * This prevents the same job completion
+ * from paying the player twice.
+ */
+function generateJobIdempotencyKey(jobType = "job") {
+
+    return [
+        "job",
+        jobType,
+        Date.now(),
+        Math.random().toString(36).slice(2, 10)
+    ].join("-");
+
+}
+
+
+/*
+ * Get available jobs.
+ */
+async function getAvailableJobs() {
+
+    const token = getJobAccessToken();
+
+    if (!token) {
+        return null;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/jobs",
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+
+            console.warn(
+                "Failed to load jobs:",
+                data.message
+            );
+
+            return null;
+
+        }
+
+        return data.jobs || [];
+
+    } catch (error) {
+
+        console.error(
+            "Job catalogue request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Start a job.
+ */
+async function startJob(jobType) {
+
+    const token = getJobAccessToken();
+
+    if (!token) {
+
+        console.warn(
+            "Cannot start job: player is not authenticated."
+        );
+
+        return null;
+
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/jobs/start",
+            {
+                method: "POST",
+
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    job_type: jobType
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+
+            console.warn(
+                "Job start failed:",
+                data.message
+            );
+
+            return null;
+
+        }
+
+        console.log(
+            "Job started:",
+            data.job
+        );
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "Job start request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Get the player's current job.
+ */
+async function getCurrentJob() {
+
+    const token = getJobAccessToken();
+
+    if (!token) {
+        return null;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/jobs/current",
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+
+            console.warn(
+                "Failed to load current job:",
+                data.message
+            );
+
+            return null;
+
+        }
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "Current job request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Complete a job and receive salary.
+ *
+ * IMPORTANT:
+ * The salary is NOT supplied by the frontend.
+ * The server determines the player's payment.
+ */
+async function completeJob(jobType = "job") {
+
+    const token = getJobAccessToken();
+
+    if (!token) {
+
+        console.warn(
+            "Cannot complete job: player is not authenticated."
+        );
+
+        return null;
+
+    }
+
+    const idempotencyKey =
+        generateJobIdempotencyKey(jobType);
+
+    try {
+
+        const response = await fetch(
+            "/api/jobs/complete",
+            {
+                method: "POST",
+
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    idempotency_key: idempotencyKey
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+
+            console.warn(
+                "Job completion failed:",
+                data.message
+            );
+
+            return null;
+
+        }
+
+
+        /*
+         * Immediately update the HUD with the
+         * server-confirmed wallet balance.
+         */
+        if (data.wallet) {
+
+            if (window.lagosHUD?.updateWallet) {
+
+                window.lagosHUD.updateWallet(
+                    data.wallet.cash,
+                    data.wallet.bank
+                );
+
+            }
+
+        }
+
+
+        console.log(
+            `Job completed: ${data.job?.name || jobType}`
+        );
+
+        console.log(
+            `Earned: ₦${Number(data.earnings || 0).toLocaleString()}`
+        );
+
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "Job completion request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Leave the current job.
+ */
+async function quitJob() {
+
+    const token = getJobAccessToken();
+
+    if (!token) {
+        return null;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/jobs/quit",
+            {
+                method: "POST",
+
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+
+            console.warn(
+                "Failed to quit job:",
+                data.message
+            );
+
+            return null;
+
+        }
+
+        console.log(
+            "Current job ended."
+        );
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "Job quit request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Get lifetime job statistics.
+ */
+async function getJobStats() {
+
+    const token = getJobAccessToken();
+
+    if (!token) {
+        return null;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/jobs/stats",
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+
+            return null;
+
+        }
+
+        return data.stats || null;
+
+    } catch (error) {
+
+        console.error(
+            "Job stats request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/*
+ * Expose the job system globally.
+ *
+ * Existing gameplay systems can now call:
+ *
+ * window.lagosJobs.start(...)
+ * window.lagosJobs.complete(...)
+ */
+window.lagosJobs = {
+
+    getAvailableJobs,
+
+    start: startJob,
+
+    current: getCurrentJob,
+
+    complete: completeJob,
+
+    quit: quitJob,
+
+    stats: getJobStats
+
+};
 
 // =====================================
 // SERVER TIME
