@@ -196,7 +196,80 @@
 
     <!-- GAME -->
 
-    <div id="game-container"></div>
+    <div id="game-container">
+        <!-- =========================
+     JOBS PANEL
+========================= -->
+<div id="jobs-panel" class="jobs-panel">
+    <div class="jobs-header">
+        <div>
+            <span class="jobs-eyebrow">LAGOS LEGENDS</span>
+            <h2>Jobs</h2>
+        </div>
+
+        <button
+            type="button"
+            id="jobs-close-button"
+            class="jobs-close-button"
+            aria-label="Close jobs panel"
+        >
+            ×
+        </button>
+    </div>
+
+    <!-- Available Jobs -->
+    <div id="jobs-list" class="jobs-list">
+        <div class="jobs-loading">
+            Loading available jobs...
+        </div>
+    </div>
+
+    <!-- Current Job -->
+    <div id="current-job-section" class="current-job-section">
+        <div class="current-job-label">CURRENT JOB</div>
+
+        <div id="current-job-card" class="current-job-card">
+            <div>
+                <span id="current-job-name">No active job</span>
+                <small id="current-job-status">
+                    Choose a job to start working.
+                </small>
+            </div>
+
+            <button
+                type="button"
+                id="job-quit-button"
+                class="job-quit-button"
+                style="display: none;"
+            >
+                Quit
+            </button>
+        </div>
+    </div>
+
+    <!-- Job Stats -->
+    <div id="job-stats-section" class="job-stats-section">
+        <div class="job-stat">
+            <span>Total Earned</span>
+            <strong id="job-total-earned">₦0</strong>
+        </div>
+
+        <div class="job-stat">
+            <span>Jobs Completed</span>
+            <strong id="job-completed-count">0</strong>
+        </div>
+    </div>
+</div>
+
+<!-- Jobs Toggle Button -->
+<button
+    type="button"
+    id="jobs-open-button"
+    class="jobs-open-button"
+>
+    💼 Jobs
+</button>
+    </div>
 
 
    <div id="game-ui">
