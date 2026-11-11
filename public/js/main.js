@@ -692,6 +692,89 @@ window.lagosJobs = {
     stats: getJobStats
 
 };
+/* ==========================================
+   STAGE 8.8 — DELIVERY DRIVER PAYOUT
+========================================== */
+
+async function processDeliveryDriverCompletion() {
+
+    /*
+     * Make sure the player is actually working
+     * as a delivery driver.
+     */
+    const currentJob = await window.lagosJobs?.current();
+
+    if (!currentJob?.job) {
+
+        console.warn(
+            "Delivery completed, but player has no active job."
+        );
+
+        return null;
+
+    }
+
+
+    /*
+     * Make sure the active job is actually
+     * Delivery Driver.
+     */
+    if (currentJob.job.job_type !== "delivery") {
+
+        console.warn(
+            "Delivery completion rejected: wrong active job."
+        );
+
+        return null;
+
+    }
+
+
+    /*
+     * Ask the server to complete the job.
+     *
+     * The server determines the salary.
+     */
+    const result =
+        await window.lagosJobs.complete("delivery");
+
+
+    if (!result) {
+
+        console.warn(
+            "Delivery payout failed."
+        );
+
+        return null;
+
+    }
+
+
+    /*
+     * Show the successful payout in the console
+     * for now.
+     *
+     * We'll replace this with the proper
+     * in-game job notification/UI shortly.
+     */
+    console.log(
+        `DELIVERY COMPLETE — Earned ₦${Number(
+            result.earnings || 0
+        ).toLocaleString()}`
+    );
+
+
+    return result;
+
+}
+
+
+/*
+ * Make the completion helper available to
+ * the existing gameplay systems.
+ */
+window.lagosJobs.processDeliveryCompletion =
+    processDeliveryDriverCompletion;
 
 // =====================================
 // SERVER TIME
