@@ -559,7 +559,273 @@
         WASD / ARROW KEYS
     </div>
 
+<script>
+    (() => {
+        const jobsPanel = document.getElementById("jobs-panel");
+        const jobsOpenButton = document.getElementById("jobs-open-button");
+        const jobsCloseButton = document.getElementById("jobs-close-button");
 
+        const jobsList = document.getElementById("jobs-list");
+        const currentJobName = document.getElementById("current-job-name");
+        const currentJobStatus = document.getElementById("current-job-status");
+        const jobQuitButton = document.getElementById("job-quit-button");
+
+        const totalEarnedElement =
+            document.getElementById("job-total-earned");
+
+        const completedCountElement =
+            document.getElementById("job-completed-count");
+
+        function formatMoney(amount) {
+            return `₦${Number(amount || 0).toLocaleString("en-NG")}`;
+        }
+
+        function openJobsPanel() {
+            jobsPanel.classList.add("active");
+
+            loadJobs();
+            loadCurrentJob();
+            loadJobStats();
+        }
+
+        function closeJobsPanel() {
+            jobsPanel.classList.remove("active");
+        }
+
+        async function loadJobs() {
+            if (!window.lagosJobs?.getAvailable) {
+                jobsList.innerHTML = `
+                    <div class="jobs-empty">
+                        Jobs system is still loading...
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const jobs = await window.lagosJobs.getAvailable();
+
+                if (!jobs || jobs.length === 0) {
+                    jobsList.innerHTML = `
+                        <div class="jobs-empty">
+                            No jobs are currently available.
+                        </div>
+                    `;
+                    return;
+                }
+
+                jobsList.innerHTML = "";
+
+                jobs.forEach(job => {
+                    const card = document.createElement("div");
+                    card.className = "job-card";
+
+                    card.innerHTML = `
+                        <div class="job-card-info">
+                            <span class="job-card-type">
+                                ${job.job_type}
+                            </span>
+
+                            <h3>${job.name}</h3>
+
+                            <p>${job.description || "Work around Lagos and earn money."}</p>
+
+                            <div class="job-pay">
+                                <span>Base Pay</span>
+                                <strong>${formatMoney(job.base_pay)}</strong>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="job-start-button"
+                            data-job-type="${job.job_type}"
+                        >
+                            Start
+                        </button>
+                    `;
+
+                    jobsList.appendChild(card);
+                });
+
+                jobsList
+                    .querySelectorAll(".job-start-button")
+                    .forEach(button => {
+                        button.addEventListener("click", async () => {
+                            const jobType =
+                                button.dataset.jobType;
+
+                            button.disabled = true;
+                            button.textContent = "Starting...";
+
+                            try {
+                                await window.lagosJobs.start(jobType);
+
+                                await loadCurrentJob();
+                                await loadJobStats();
+
+                                jobsPanel.classList.add("active");
+                            } catch (error) {
+                                console.error(
+                                    "Failed to start job:",
+                                    error
+                                );
+
+                                alert(
+                                    error.message ||
+                                    "Unable to start this job."
+                                );
+                            } finally {
+                                button.disabled = false;
+                                button.textContent = "Start";
+                            }
+                        });
+                    });
+
+            } catch (error) {
+                console.error(
+                    "Failed to load jobs:",
+                    error
+                );
+
+                jobsList.innerHTML = `
+                    <div class="jobs-empty">
+                        Unable to load jobs.
+                    </div>
+                `;
+            }
+        }
+
+        async function loadCurrentJob() {
+            if (!window.lagosJobs?.current) {
+                return;
+            }
+
+            try {
+                const data =
+                    await window.lagosJobs.current();
+
+                if (!data || !data.job) {
+                    currentJobName.textContent =
+                        "No active job";
+
+                    currentJobStatus.textContent =
+                        "Choose a job to start working.";
+
+                    jobQuitButton.style.display = "none";
+
+                    return;
+                }
+
+                currentJobName.textContent =
+                    data.job.name;
+
+                currentJobStatus.textContent =
+                    "You are currently working this job.";
+
+                jobQuitButton.style.display =
+                    "inline-flex";
+
+            } catch (error) {
+                console.error(
+                    "Failed to load current job:",
+                    error
+                );
+            }
+        }
+
+        async function loadJobStats() {
+            if (!window.lagosJobs?.stats) {
+                return;
+            }
+
+            try {
+                const data =
+                    await window.lagosJobs.stats();
+
+                const stats = data?.stats || data || {};
+
+                totalEarnedElement.textContent =
+                    formatMoney(stats.total_earned);
+
+                completedCountElement.textContent =
+                    Number(
+                        stats.completed_jobs || 0
+                    ).toLocaleString("en-NG");
+
+            } catch (error) {
+                console.error(
+                    "Failed to load job stats:",
+                    error
+                );
+            }
+        }
+
+        jobQuitButton.addEventListener(
+            "click",
+            async () => {
+                jobQuitButton.disabled = true;
+                jobQuitButton.textContent = "Quitting...";
+
+                try {
+                    await window.lagosJobs.quit();
+
+                    await loadCurrentJob();
+                    await loadJobs();
+
+                } catch (error) {
+                    console.error(
+                        "Failed to quit job:",
+                        error
+                    );
+
+                    alert(
+                        error.message ||
+                        "Unable to quit the job."
+                    );
+                } finally {
+                    jobQuitButton.disabled = false;
+                    jobQuitButton.textContent = "Quit";
+                }
+            }
+        );
+
+        jobsOpenButton.addEventListener(
+            "click",
+            openJobsPanel
+        );
+
+        jobsCloseButton.addEventListener(
+            "click",
+            closeJobsPanel
+        );
+
+        /*
+         * Refresh job information after authentication.
+         */
+        window.addEventListener(
+            "lagos:authenticated",
+            () => {
+                loadCurrentJob();
+                loadJobStats();
+            }
+        );
+
+        /*
+         * Expose a small UI API for main.js
+         * and future job systems.
+         */
+        window.lagosJobsUI = {
+            open: openJobsPanel,
+            close: closeJobsPanel,
+            refresh: async () => {
+                await loadJobs();
+                await loadCurrentJob();
+                await loadJobStats();
+            }
+        };
+    })();
+</script>
     <!-- AUTHENTICATION FIRST, THEN GAME -->
 
     <script type="module" src="/js/auth.js"></script>
