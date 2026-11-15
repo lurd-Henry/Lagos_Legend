@@ -11,6 +11,7 @@ import { AtmosphereSystems } from "./atmosphereSystems.js";
 import { NPCSystems } from "./npcSystems.js";
 import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
+import { JobSystems } from "./jobSystems.js";
 
 // =====================================
 // DEBUGGING - ERROR DETECTOR
