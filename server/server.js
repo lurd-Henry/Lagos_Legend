@@ -2887,10 +2887,10 @@ app.get("/api/jobs/stats", authenticate, async (req, res) => {
 // START SERVER
 // ==========================================
 
-app.listen(PORT, "0.0.0.0", () => {
+const HOST = "0.0.0.0";
 
+app.listen(PORT, HOST, () => {
     console.log(
-        `Lagos Legends running on port ${PORT}`
+        `Lagos Legends server running on ${HOST}:${PORT}`
     );
-
 });
