@@ -661,6 +661,12 @@
                             try {
                                 await window.lagosJobs.start(jobType);
 
+                                if (
+    jobType === "delivery" &&
+    window.lagosJobSystems
+) {
+    await window.lagosJobSystems.startDelivery();
+}
                                 await loadCurrentJob();
                                 await loadJobStats();
 
