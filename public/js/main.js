@@ -19,6 +19,7 @@ const jobSystems =
         worldSystems,
         vehicleSystems
     );
+window.lagosJobSystems = jobSystems;
 // =====================================
 // DEBUGGING - ERROR DETECTOR
 // =====================================
@@ -2446,7 +2447,7 @@ function animate() {
 
     // Update atmosphere
     atmosphereSystem.update(delta);
-
+    jobSystems.update(delta);
     // =====================================
     // INPUT
     // =====================================
