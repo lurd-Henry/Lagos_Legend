@@ -659,18 +659,24 @@
                             button.textContent = "Starting...";
 
                             try {
-                                await window.lagosJobs.start(jobType);
-
-                                if (
+                              if (
     jobType === "delivery" &&
     window.lagosJobSystems
 ) {
-    await window.lagosJobSystems.startDelivery();
-}
-                                await loadCurrentJob();
-                                await loadJobStats();
 
-                                jobsPanel.classList.add("active");
+    await window.lagosJobSystems.startDelivery();
+
+} else {
+
+    await window.lagosJobs.start(
+        jobType
+    );
+}
+
+await loadCurrentJob();
+await loadJobStats();
+
+jobsPanel.classList.add("active");
                             } catch (error) {
                                 console.error(
                                     "Failed to start job:",
