@@ -273,7 +273,171 @@ function getJobAccessToken() {
     }
 
 }
+// =========================================
+// PLAYER WORLD STATE PERSISTENCE
+// =========================================
 
+let lastWorldSave = 0;
+
+const WORLD_SAVE_INTERVAL = 30000;
+
+let worldStateLoaded = false;
+
+
+function getWorldStateToken() {
+
+    return (
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("supabase_access_token") ||
+        null
+    );
+}
+
+
+async function loadPlayerWorldState() {
+
+    const token =
+        getWorldStateToken();
+
+    if (!token) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/player/world-state",
+                {
+                    method: "GET",
+
+                    headers: {
+                        Authorization:
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            data.status !== "success"
+        ) {
+
+            console.warn(
+                "Unable to load player world state."
+            );
+
+            return;
+        }
+
+        const state =
+            data.worldState;
+
+        if (!state) {
+            return;
+        }
+
+        player.position.set(
+            Number(state.position_x),
+            Number(state.position_y),
+            Number(state.position_z)
+        );
+
+        player.rotation.y =
+            Number(state.rotation_y);
+
+        worldStateLoaded = true;
+
+        console.log(
+            "Player world state loaded."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "World state load failed:",
+            error
+        );
+    }
+}
+
+
+async function savePlayerWorldState() {
+
+    const token =
+        getWorldStateToken();
+
+    if (!token || !player) {
+        return;
+    }
+
+    try {
+
+        await fetch(
+            "/api/player/world-state",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json",
+
+                    Authorization:
+                        `Bearer ${token}`
+                },
+
+                body: JSON.stringify({
+                    position_x:
+                        player.position.x,
+
+                    position_y:
+                        player.position.y,
+
+                    position_z:
+                        player.position.z,
+
+                    rotation_y:
+                        player.rotation.y,
+
+                    current_vehicle_id:
+                        null
+                })
+            }
+        );
+
+        lastWorldSave =
+            Date.now();
+
+    } catch (error) {
+
+        console.error(
+            "World state save failed:",
+            error
+        );
+    }
+}
+
+
+function updateWorldStatePersistence() {
+
+    if (!worldStateLoaded) {
+        return;
+    }
+
+    const now =
+        Date.now();
+
+    if (
+        now - lastWorldSave >=
+        WORLD_SAVE_INTERVAL
+    ) {
+
+        savePlayerWorldState();
+    }
+}
 
 /*
  * Generate a unique idempotency key.
