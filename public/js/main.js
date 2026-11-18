@@ -12,13 +12,7 @@ import { NPCSystems } from "./npcSystems.js";
 import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
 import { JobSystems } from "./jobSystems.js";
-const jobSystems =
-    new JobSystems(
-        scene,
-        player,
-        worldSystems,
-        vehicleSystems
-    );
+
 window.lagosJobSystems = jobSystems;
 // =====================================
 // DEBUGGING - ERROR DETECTOR
@@ -839,6 +833,13 @@ let interiorSystem = null;
 scene.background = new THREE.Color(0x9bcbd8);
 scene.fog = new THREE.Fog(0x9bcbd8, 120, 400);
 
+const jobSystems =
+    new JobSystems(
+        scene,
+        player,
+        worldSystems,
+        vehicleSystems
+    );
 // =====================================
 // CAMERA
 // =====================================
