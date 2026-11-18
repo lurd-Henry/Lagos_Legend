@@ -13,7 +13,6 @@ import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
 import { JobSystems } from "./jobSystems.js";
 
-window.lagosJobSystems = jobSystems;
 // =====================================
 // DEBUGGING - ERROR DETECTOR
 // =====================================
@@ -840,6 +839,7 @@ const jobSystems =
         worldSystems,
         vehicleSystems
     );
+window.lagosJobSystems = jobSystems;
 // =====================================
 // CAMERA
 // =====================================
