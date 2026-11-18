@@ -242,14 +242,14 @@ Secrets and credentials are provided through environment variables and are inten
 Clone the repository:
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/lurd-Henry/Lagos_Legend/
 cd lagos-legends
 ```
 
 Create your environment file:
 
 ```bash
-cp .env.example .env
+cp .env
 ```
 
 Add the required environment variables to `.env`.
