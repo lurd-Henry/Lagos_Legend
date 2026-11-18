@@ -167,7 +167,28 @@ ON player_inventory(player_id);
 CREATE INDEX IF NOT EXISTS idx_business_type
 ON businesses(business_type);
 
+-- =========================================
+-- PLAYER WORLD STATE
+-- =========================================
 
+CREATE TABLE IF NOT EXISTS player_world_state (
+    player_id UUID PRIMARY KEY
+        REFERENCES players(id)
+        ON DELETE CASCADE,
+
+    position_x DOUBLE PRECISION NOT NULL DEFAULT 0,
+    position_y DOUBLE PRECISION NOT NULL DEFAULT 0,
+    position_z DOUBLE PRECISION NOT NULL DEFAULT 0,
+
+    rotation_y DOUBLE PRECISION NOT NULL DEFAULT 0,
+
+    current_vehicle_id BIGINT,
+
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS player_world_state_updated_at_idx
+ON player_world_state(updated_at);
 -- ==========================================
 -- END OF LAGOS LEGENDS DATABASE
 -- ==========================================
