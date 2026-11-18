@@ -832,14 +832,6 @@ let interiorSystem = null;
 scene.background = new THREE.Color(0x9bcbd8);
 scene.fog = new THREE.Fog(0x9bcbd8, 120, 400);
 
-const jobSystems =
-    new JobSystems(
-        scene,
-        player,
-        worldSystems,
-        vehicleSystems
-    );
-window.lagosJobSystems = jobSystems;
 // =====================================
 // CAMERA
 // =====================================
@@ -1631,6 +1623,14 @@ trafficSystem.npcSystem = npcSystem;
 // Atmosphere system
 const atmosphereSystem = new AtmosphereSystems(scene, container);
 
+const jobSystems =
+    new JobSystems(
+        scene,
+        player,
+        worldSystems,
+        vehicleSystems
+    );
+window.lagosJobSystems = jobSystems;
 // =====================================
 // CHARACTER CUSTOMISATION
 // =====================================
