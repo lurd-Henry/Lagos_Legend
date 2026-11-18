@@ -414,7 +414,7 @@ setInterval(() => {
 
 // Start tracking after authentication.
 
-window.addEventListener("lagos:authenticated", () => {
+window.addEventListener("lagos:authenticated", async() => {
     await loadPlayerWorldState();
     sendHungerHeartbeat();
 });
