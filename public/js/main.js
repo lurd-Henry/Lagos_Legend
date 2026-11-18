@@ -2600,7 +2600,7 @@ const clock = new THREE.Clock();
 const direction = new THREE.Vector2();
 
 function animate() {
-
+    updateWorldStatePersistence();
     requestAnimationFrame(animate);
 
     const delta = Math.min(clock.getDelta(), 0.05);
