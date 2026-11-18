@@ -1627,7 +1627,7 @@ const jobSystems =
     new JobSystems(
         scene,
         player,
-        worldSystem,
+        world,
         vehicleSystem
     );
 window.lagosJobSystems = jobSystems;
