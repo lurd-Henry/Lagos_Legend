@@ -236,7 +236,13 @@ function formatNaira(value) {
     }
 
 }
+window.addEventListener(
+    "beforeunload",
+    () => {
 
+        savePlayerWorldState();
+    }
+);
 
 // Update health bar
 
