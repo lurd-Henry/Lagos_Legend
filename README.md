@@ -1,4 +1,5 @@
 # Lagos Legends
+[![CI](https://github.com/lurd-Henry/lagos-legends/actions/workflows/ci.yml/badge.svg)](https://github.com/lurd-Henry/lagos-legends/actions/workflows/ci.yml)
 
 > **THE CITY IS YOURS.**
 
