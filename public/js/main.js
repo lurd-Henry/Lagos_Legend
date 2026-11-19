@@ -1889,6 +1889,13 @@ const jobSystems =
         vehicleSystem
     );
 window.lagosJobSystems = jobSystems;
+const jobLocationSystems = new JobLocationSystems(
+    scene,
+    world,
+    player
+);
+
+window.lagosJobLocations = jobLocationSystems;
 // =====================================
 // CHARACTER CUSTOMISATION
 // =====================================
