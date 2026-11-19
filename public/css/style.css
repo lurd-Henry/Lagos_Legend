@@ -1755,7 +1755,7 @@ canvas {
     position: absolute;
 
     top: 16px;
-    right: 16px;
+    left: 16px;
 
     width: 190px;
     height: 190px;
