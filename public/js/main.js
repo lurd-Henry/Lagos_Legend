@@ -1891,6 +1891,18 @@ const jobSystems =
     );
 window.lagosJobSystems = jobSystems;
 // =====================================
+// WORLD MAP
+// =====================================
+
+const worldMap =
+    new WorldMapSystem(
+        player,
+        WORLD_SIZE
+    );
+
+window.lagosWorldMap =
+    worldMap;
+// =====================================
 // STAGE 9.1.1E.2 — DISPATCH DEPOT
 // =====================================
 
