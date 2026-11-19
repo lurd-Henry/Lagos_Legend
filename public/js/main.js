@@ -1774,6 +1774,18 @@ createKiosk(-50, 90, 0xd8a13b);
 createKiosk(50, -90, 0xc96d38);
 createKiosk(150, 90, 0x3d9970);
 // =====================================
+// WORLD MAP
+// =====================================
+
+const worldMap =
+    new WorldMapSystem(
+        player,
+        WORLD_SIZE
+    );
+
+window.lagosWorldMap =
+    worldMap;
+// =====================================
 // MAP — KIOSKS
 // =====================================
 
@@ -1952,18 +1964,7 @@ const jobSystems =
         vehicleSystem
     );
 window.lagosJobSystems = jobSystems;
-// =====================================
-// WORLD MAP
-// =====================================
 
-const worldMap =
-    new WorldMapSystem(
-        player,
-        WORLD_SIZE
-    );
-
-window.lagosWorldMap =
-    worldMap;
 // =====================================
 // STAGE 9.1.1E.2 — DISPATCH DEPOT
 // =====================================
