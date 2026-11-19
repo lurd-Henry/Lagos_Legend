@@ -1773,84 +1773,7 @@ residentialLocations.forEach((location, index) => {
 createKiosk(-50, 90, 0xd8a13b);
 createKiosk(50, -90, 0xc96d38);
 createKiosk(150, 90, 0x3d9970);
-// =====================================
-// WORLD MAP
-// =====================================
 
-const worldMap =
-    new WorldMapSystem(
-        player,
-        WORLD_SIZE
-    );
-
-window.lagosWorldMap =
-    worldMap;
-// =====================================
-// MAP — KIOSKS
-// =====================================
-
-worldMap.addLocation({
-
-    id: "kiosk_dispatch",
-    name: "Dispatch Kiosk",
-    type: "kiosk",
-    x: -50,
-    z: 90,
-    icon: "🏪"
-
-});
-
-
-worldMap.addLocation({
-
-    id: "kiosk_central",
-    name: "Central Kiosk",
-    type: "kiosk",
-    x: 50,
-    z: -90,
-    icon: "🏪"
-
-});
-
-
-worldMap.addLocation({
-
-    id: "kiosk_east",
-    name: "East Kiosk",
-    type: "kiosk",
-    x: 150,
-    z: 90,
-    icon: "🏪"
-
-});
-createBusStop(-12, -90);
-createBusStop(12, 90);
-// =====================================
-// MAP — BUS STOPS
-// =====================================
-
-worldMap.addLocation({
-
-    id: "bus_stop_west",
-    name: "West Bus Stop",
-    type: "bus",
-    x: -12,
-    z: -90,
-    icon: "🚌"
-
-});
-
-
-worldMap.addLocation({
-
-    id: "bus_stop_east",
-    name: "East Bus Stop",
-    type: "bus",
-    x: 12,
-    z: 90,
-    icon: "🚌"
-
-});
 // =====================================
 // STREETLIGHT PLACEMENT
 // =====================================
@@ -1964,6 +1887,85 @@ const jobSystems =
         vehicleSystem
     );
 window.lagosJobSystems = jobSystems;
+
+// =====================================
+// WORLD MAP
+// =====================================
+
+const worldMap =
+    new WorldMapSystem(
+        player,
+        WORLD_SIZE
+    );
+
+window.lagosWorldMap =
+    worldMap;
+// =====================================
+// MAP — KIOSKS
+// =====================================
+
+worldMap.addLocation({
+
+    id: "kiosk_dispatch",
+    name: "Dispatch Kiosk",
+    type: "kiosk",
+    x: -50,
+    z: 90,
+    icon: "🏪"
+
+});
+
+
+worldMap.addLocation({
+
+    id: "kiosk_central",
+    name: "Central Kiosk",
+    type: "kiosk",
+    x: 50,
+    z: -90,
+    icon: "🏪"
+
+});
+
+
+worldMap.addLocation({
+
+    id: "kiosk_east",
+    name: "East Kiosk",
+    type: "kiosk",
+    x: 150,
+    z: 90,
+    icon: "🏪"
+
+});
+createBusStop(-12, -90);
+createBusStop(12, 90);
+// =====================================
+// MAP — BUS STOPS
+// =====================================
+
+worldMap.addLocation({
+
+    id: "bus_stop_west",
+    name: "West Bus Stop",
+    type: "bus",
+    x: -12,
+    z: -90,
+    icon: "🚌"
+
+});
+
+
+worldMap.addLocation({
+
+    id: "bus_stop_east",
+    name: "East Bus Stop",
+    type: "bus",
+    x: 12,
+    z: 90,
+    icon: "🚌"
+
+});
 
 // =====================================
 // STAGE 9.1.1E.2 — DISPATCH DEPOT
