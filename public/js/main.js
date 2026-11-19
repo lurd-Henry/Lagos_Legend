@@ -499,9 +499,10 @@ setInterval(() => {
 
 // Start tracking after authentication.
 
-window.addEventListener("lagos:authenticated", async() => {
+window.addEventListener("lagos:authenticated", async () => {
     await loadPlayerWorldState();
     sendHungerHeartbeat();
+    connectLagosWebSocket();
 });
 /* ==========================================
    STAGE 8.8 — JOB SYSTEM
