@@ -2903,43 +2903,78 @@ const wss = new WebSocketServer({
     server: httpServer
 });
 
-wss.on("connection", (socket) => {
+const connectedPlayers = new Map();
 
-    console.log("WebSocket client connected.");
+wss.on("connection", async (socket, request) => {
+    try {
+        const requestUrl = new URL(
+            request.url,
+            `http://${request.headers.host}`
+        );
 
-    socket.send(
-        JSON.stringify({
+        const token = requestUrl.searchParams.get("token");
+
+        if (!token) {
+            socket.close(1008, "Authentication required.");
+            return;
+        }
+
+        const userResponse = await supabaseRequest("/auth/v1/user", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (!userResponse.ok || !userResponse.data?.id) {
+            socket.close(1008, "Invalid authentication.");
+            return;
+        }
+
+        const playerId = userResponse.data.id;
+
+        const player = {
+            playerId,
+            socket,
+            roomId: "lagos-city",
+            connectedAt: new Date().toISOString()
+        };
+
+        connectedPlayers.set(playerId, player);
+
+        console.log(
+            `WebSocket player connected: ${playerId}`
+        );
+
+        socket.send(JSON.stringify({
             type: "connection",
-            status: "connected",
-            message: "Lagos Legends realtime server connected."
-        })
-    );
+            status: "authenticated",
+            player_id: playerId,
+            room_id: player.roomId,
+            message: "Connected to Lagos Legends realtime server."
+        }));
 
-    socket.on("close", () => {
+        socket.on("close", () => {
+            connectedPlayers.delete(playerId);
 
-        console.log("WebSocket client disconnected.");
+            console.log(
+                `WebSocket player disconnected: ${playerId}`
+            );
+        });
 
-    });
+        socket.on("error", (error) => {
+            console.error(
+                `WebSocket error for ${playerId}:`,
+                error
+            );
+        });
 
-    socket.on("error", (error) => {
-
+    } catch (error) {
         console.error(
-            "WebSocket error:",
+            "WebSocket authentication error:",
             error
         );
 
-    });
-
-});
-
-httpServer.listen(PORT, HOST, () => {
-
-    console.log(
-        `Lagos Legends server running on ${HOST}:${PORT}`
-    );
-
-    console.log(
-        "Lagos Legends WebSocket server ready."
-    );
-
+        socket.close(1011, "WebSocket authentication failed.");
+    }
 });
