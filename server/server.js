@@ -2886,10 +2886,6 @@ app.get("/api/jobs/stats", authenticate, async (req, res) => {
 });
 
 // ==========================================
-// START SERVER
-// ==========================================
-
-// ==========================================
 // STAGE 9.1.1B — WEBSOCKET INFRASTRUCTURE
 // ==========================================
 
@@ -2897,6 +2893,8 @@ import http from "http";
 
 const HOST = "0.0.0.0";
 
+// Create HTTP server so Express and WebSocket
+// can run on the same Render service.
 const httpServer = http.createServer(app);
 
 const wss = new WebSocketServer({
@@ -2906,7 +2904,9 @@ const wss = new WebSocketServer({
 const connectedPlayers = new Map();
 
 wss.on("connection", async (socket, request) => {
+
     try {
+
         const requestUrl = new URL(
             request.url,
             `http://${request.headers.host}`
@@ -2919,19 +2919,20 @@ wss.on("connection", async (socket, request) => {
             return;
         }
 
-        const userResponse = await supabaseRequest("/auth/v1/user", {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
+        // Authenticate the player through Supabase.
+        const userResponse = await supabaseRequest(
+            "user",
+            "GET",
+            null,
+            token
+        );
 
-        if (!userResponse.ok || !userResponse.data?.id) {
+        if (!userResponse?.id) {
             socket.close(1008, "Invalid authentication.");
             return;
         }
 
-        const playerId = userResponse.data.id;
+        const playerId = userResponse.id;
 
         const player = {
             playerId,
@@ -2946,35 +2947,82 @@ wss.on("connection", async (socket, request) => {
             `WebSocket player connected: ${playerId}`
         );
 
-        socket.send(JSON.stringify({
-            type: "connection",
-            status: "authenticated",
-            player_id: playerId,
-            room_id: player.roomId,
-            message: "Connected to Lagos Legends realtime server."
-        }));
+        socket.send(
+            JSON.stringify({
+                type: "connection",
+                status: "authenticated",
+                player_id: playerId,
+                room_id: player.roomId,
+                message:
+                    "Connected to Lagos Legends realtime server."
+            })
+        );
 
         socket.on("close", () => {
+
             connectedPlayers.delete(playerId);
 
             console.log(
                 `WebSocket player disconnected: ${playerId}`
             );
+
         });
 
         socket.on("error", (error) => {
+
             console.error(
                 `WebSocket error for ${playerId}:`,
                 error
             );
+
         });
 
     } catch (error) {
+
         console.error(
             "WebSocket authentication error:",
             error
         );
 
-        socket.close(1011, "WebSocket authentication failed.");
+        socket.close(
+            1011,
+            "WebSocket authentication failed."
+        );
+
     }
+
+});
+
+// ==========================================
+// SERVER ERROR HANDLING
+// ==========================================
+
+httpServer.on("error", (error) => {
+
+    console.error(
+        "HTTP SERVER ERROR:",
+        error
+    );
+
+});
+
+// ==========================================
+// START SERVER
+// ==========================================
+
+httpServer.listen(PORT, HOST, () => {
+
+    console.log(`
+==========================================
+LAGOS LEGENDS SERVER ONLINE
+==========================================
+Host: ${HOST}
+Port: ${PORT}
+Environment: ${process.env.NODE_ENV || "development"}
+WebSocket: enabled
+Supabase: ${SUPABASE_URL ? "configured" : "not configured"}
+Database: ${pool ? "configured" : "not configured"}
+==========================================
+`);
+
 });
