@@ -1889,6 +1889,132 @@ const jobSystems =
         vehicleSystem
     );
 window.lagosJobSystems = jobSystems;
+// =====================================
+// STAGE 9.1.1E.2 — DISPATCH DEPOT
+// =====================================
+
+function createDeliveryAttendant(x, z) {
+
+    const attendant = new THREE.Group();
+
+    const uniformMaterial = new THREE.MeshStandardMaterial({
+        color: 0x263b58,
+        flatShading: true
+    });
+
+    const skinMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8b593c,
+        flatShading: true
+    });
+
+    const trouserMaterial = new THREE.MeshStandardMaterial({
+        color: 0x252525,
+        flatShading: true
+    });
+
+    // Body
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.75, 0.95, 0.4),
+        uniformMaterial
+    );
+
+    body.position.y = 1.05;
+    attendant.add(body);
+
+    // Head
+    const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.27, 10, 8),
+        skinMaterial
+    );
+
+    head.position.y = 1.75;
+    attendant.add(head);
+
+    // Legs
+    for (const side of [-1, 1]) {
+
+        const leg = new THREE.Mesh(
+            new THREE.BoxGeometry(0.25, 0.65, 0.3),
+            trouserMaterial
+        );
+
+        leg.position.set(
+            side * 0.18,
+            0.32,
+            0
+        );
+
+        attendant.add(leg);
+
+    }
+
+    // Arms
+    for (const side of [-1, 1]) {
+
+        const arm = new THREE.Mesh(
+            new THREE.BoxGeometry(0.22, 0.8, 0.25),
+            uniformMaterial
+        );
+
+        arm.position.set(
+            side * 0.48,
+            1.05,
+            0
+        );
+
+        attendant.add(arm);
+
+    }
+
+    attendant.position.set(x, 0, z);
+
+    scene.add(attendant);
+
+    // Register the attendant with the world interaction system.
+    world.addInteractable({
+
+        x,
+        z,
+
+        type: "npc",
+
+        action: async () => {
+
+            if (jobSystems.isActive()) {
+
+                alert(
+                    "You already have an active delivery assignment."
+                );
+
+                return;
+            }
+
+            const job = await jobSystems.startDelivery();
+
+            if (job) {
+
+                console.log(
+                    "Dispatch assignment accepted!"
+                );
+
+            }
+
+        }
+
+    });
+
+    return attendant;
+}
+
+
+// Create the first dispatch attendant.
+const deliveryAttendant = createDeliveryAttendant(
+    -50,
+    95
+);
+
+window.lagosDeliveryAttendant = deliveryAttendant;
+
 const jobLocationSystems = new JobLocationSystems(
     scene,
     world,
