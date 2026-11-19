@@ -3,6 +3,7 @@ import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
+import http from "http";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -2888,10 +2889,57 @@ app.get("/api/jobs/stats", authenticate, async (req, res) => {
 // START SERVER
 // ==========================================
 
+// ==========================================
+// STAGE 9.1.1B — WEBSOCKET INFRASTRUCTURE
+// ==========================================
+
+import http from "http";
+
 const HOST = "0.0.0.0";
 
-app.listen(PORT, HOST, () => {
+const httpServer = http.createServer(app);
+
+const wss = new WebSocketServer({
+    server: httpServer
+});
+
+wss.on("connection", (socket) => {
+
+    console.log("WebSocket client connected.");
+
+    socket.send(
+        JSON.stringify({
+            type: "connection",
+            status: "connected",
+            message: "Lagos Legends realtime server connected."
+        })
+    );
+
+    socket.on("close", () => {
+
+        console.log("WebSocket client disconnected.");
+
+    });
+
+    socket.on("error", (error) => {
+
+        console.error(
+            "WebSocket error:",
+            error
+        );
+
+    });
+
+});
+
+httpServer.listen(PORT, HOST, () => {
+
     console.log(
         `Lagos Legends server running on ${HOST}:${PORT}`
     );
+
+    console.log(
+        "Lagos Legends WebSocket server ready."
+    );
+
 });
