@@ -12,6 +12,7 @@ import { NPCSystems } from "./npcSystems.js";
 import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
 import { JobSystems } from "./jobSystems.js";
+import { JobLocationSystems } from "./jobLocations.js";
 
 // =====================================
 // DEBUGGING - ERROR DETECTOR
