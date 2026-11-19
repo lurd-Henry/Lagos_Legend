@@ -13,6 +13,7 @@ import { WorldSystems } from "./worldSystems.js";
 import { VehicleSystems } from "./vehicleSystems.js";
 import { JobSystems } from "./jobSystems.js";
 import { JobLocationSystems } from "./jobLocations.js";
+import { WorldMapSystem } from "./worldMapSystem.js";
 
 // =====================================
 // DEBUGGING - ERROR DETECTOR
