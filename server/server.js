@@ -2,6 +2,7 @@ import express from "express";
 import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
+import { WebSocketServer } from "ws";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
