@@ -357,7 +357,92 @@ function getGameAccessToken() {
     }
 
 }
+let lagosWebSocket = null;
+let lagosWebSocketConnected = false;
 
+function connectLagosWebSocket() {
+    const token = getGameAccessToken();
+
+    if (!token) {
+        console.warn(
+            "Lagos Legends WebSocket: no authentication token."
+        );
+        return;
+    }
+
+    if (
+        lagosWebSocket &&
+        (
+            lagosWebSocket.readyState === WebSocket.OPEN ||
+            lagosWebSocket.readyState === WebSocket.CONNECTING
+        )
+    ) {
+        return;
+    }
+
+    const protocol =
+        window.location.protocol === "https:"
+            ? "wss:"
+            : "ws:";
+
+    const wsUrl =
+        `${protocol}//${window.location.host}/?token=${encodeURIComponent(token)}`;
+
+    lagosWebSocket = new WebSocket(wsUrl);
+
+    lagosWebSocket.addEventListener("open", () => {
+        lagosWebSocketConnected = true;
+
+        console.log(
+            "Lagos Legends WebSocket connected."
+        );
+    });
+
+    lagosWebSocket.addEventListener("message", (event) => {
+        try {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "connection") {
+                console.log(
+                    "Realtime server:",
+                    data.message
+                );
+
+                console.log(
+                    "Player ID:",
+                    data.player_id
+                );
+
+                console.log(
+                    "World room:",
+                    data.room_id
+                );
+            }
+        } catch (error) {
+            console.error(
+                "Invalid WebSocket message:",
+                error
+            );
+        }
+    });
+
+    lagosWebSocket.addEventListener("close", () => {
+        lagosWebSocketConnected = false;
+
+        console.log(
+            "Lagos Legends WebSocket disconnected."
+        );
+
+        lagosWebSocket = null;
+    });
+
+    lagosWebSocket.addEventListener("error", (error) => {
+        console.error(
+            "Lagos Legends WebSocket error:",
+            error
+        );
+    });
+}
 
 async function sendHungerHeartbeat() {
 
