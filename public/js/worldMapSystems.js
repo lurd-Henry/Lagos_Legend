@@ -57,7 +57,7 @@ export class WorldMapSystem {
 
             <div id="world-minimap-header">
 
-                <span>🗺️ LOS ANGELES?</span>
+                <span>🗺️ LAGOS </span>
 
                 <button
                     id="world-map-expand"
