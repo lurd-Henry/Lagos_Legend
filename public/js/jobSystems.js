@@ -52,8 +52,8 @@ export class JobSystems {
 
         this.pickupLocation = {
             name: "Dispatch Depot",
-            x: 0,
-            z: 0
+            x: -50,
+            z: 90
         };
 
         this.createMarker();
@@ -185,35 +185,29 @@ export class JobSystems {
     // START DELIVERY
     // =====================================
 
-    async startDelivery() {
+async startDelivery() {
 
-        if (this.activeJob) {
+    if (this.activeJob) {
+
+        console.warn("A job is already active.");
+
+        return null;
+    }
+
+    try {
+
+        const result = await window.lagosJobs?.start("delivery");
+
+        if (!result) {
 
             console.warn(
-                "A job is already active."
+                "Delivery job could not be started."
             );
 
-            return;
+            return null;
         }
 
-        try {
-
-            await window.lagosJobs.start(
-                "delivery"
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Unable to start delivery job:",
-                error
-            );
-
-            return;
-        }
-
-        const destination =
-            this.getRandomDestination();
+        const destination = this.getRandomDestination();
 
         this.activeJob = {
             type: "delivery",
@@ -233,21 +227,27 @@ export class JobSystems {
 
         this.jobPhase = "pickup";
 
-        this.showMarker(
-            this.activeJob.pickup
-        );
-
-        this.showJobUI(
-            "Go to the dispatch depot.",
-            this.activeJob.pickup.name
-        );
+        // The attendant gives the player the package
+        // immediately after accepting the assignment.
+        this.pickupPackage();
 
         console.log(
             "Delivery job started:",
             this.activeJob
         );
-    }
 
+        return this.activeJob;
+
+    } catch (error) {
+
+        console.error(
+            "Unable to start delivery job:",
+            error
+        );
+
+        return null;
+    }
+}
 
     // =====================================
     // SHOW MARKER
