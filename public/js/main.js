@@ -1773,10 +1773,72 @@ residentialLocations.forEach((location, index) => {
 createKiosk(-50, 90, 0xd8a13b);
 createKiosk(50, -90, 0xc96d38);
 createKiosk(150, 90, 0x3d9970);
+// =====================================
+// MAP — KIOSKS
+// =====================================
 
+worldMap.addLocation({
+
+    id: "kiosk_dispatch",
+    name: "Dispatch Kiosk",
+    type: "kiosk",
+    x: -50,
+    z: 90,
+    icon: "🏪"
+
+});
+
+
+worldMap.addLocation({
+
+    id: "kiosk_central",
+    name: "Central Kiosk",
+    type: "kiosk",
+    x: 50,
+    z: -90,
+    icon: "🏪"
+
+});
+
+
+worldMap.addLocation({
+
+    id: "kiosk_east",
+    name: "East Kiosk",
+    type: "kiosk",
+    x: 150,
+    z: 90,
+    icon: "🏪"
+
+});
 createBusStop(-12, -90);
 createBusStop(12, 90);
+// =====================================
+// MAP — BUS STOPS
+// =====================================
 
+worldMap.addLocation({
+
+    id: "bus_stop_west",
+    name: "West Bus Stop",
+    type: "bus",
+    x: -12,
+    z: -90,
+    icon: "🚌"
+
+});
+
+
+worldMap.addLocation({
+
+    id: "bus_stop_east",
+    name: "East Bus Stop",
+    type: "bus",
+    x: 12,
+    z: 90,
+    icon: "🚌"
+
+});
 // =====================================
 // STREETLIGHT PLACEMENT
 // =====================================
@@ -2025,7 +2087,20 @@ const deliveryAttendant = createDeliveryAttendant(
     -50,
     95
 );
+// =====================================
+// MAP — DISPATCH DEPOT
+// =====================================
 
+worldMap.addLocation({
+
+    id: "dispatch_depot",
+    name: "Dispatch Depot",
+    type: "job",
+    x: -50,
+    z: 90,
+    icon: "📦"
+
+});
 window.lagosDeliveryAttendant = deliveryAttendant;
 
 const jobLocationSystems = new JobLocationSystems(
@@ -2853,6 +2928,7 @@ function animate() {
     // Update atmosphere
     atmosphereSystem.update(delta);
     jobSystems.update(delta);
+    worldMap.update();
     // =====================================
     // INPUT
     // =====================================
