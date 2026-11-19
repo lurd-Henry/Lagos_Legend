@@ -236,13 +236,13 @@ function formatNaira(value) {
     }
 
 }
-window.addEventListener(
-    "beforeunload",
-    () => {
+window.addEventListener("beforeunload", () => {
+    savePlayerWorldState();
 
-        savePlayerWorldState();
+    if (lagosWebSocket) {
+        lagosWebSocket.close();
     }
-);
+});
 
 // Update health bar
 
