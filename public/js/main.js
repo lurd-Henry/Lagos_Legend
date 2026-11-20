@@ -1119,18 +1119,21 @@ const camera = new THREE.PerspectiveCamera(
     800
 );
 
+camera.position.set(0, 3, 10);
+camera.lookAt(0, 1.5, 0);
 // =====================================
 // RENDERER
 // =====================================
 
 const renderer = new THREE.WebGLRenderer({
-    antialias: false,
+    antialis: false,
     powerPreference: "high-performance"
 });
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
+container.appenChild(renderer.domElement);
 // =====================================
 // LIGHTING
 // =====================================
@@ -3144,14 +3147,7 @@ let moveZ = characterCreationActive ? 0 : joystickY;
     // =====================================
     // RENDER
     // =====================================
-    console.log(
-        "Scene objects:",
-        scene.children.length,
-        "Player:",
-        player?.position,
-        "Camera:",
-        camera.postion
-        );
+   
     renderer.render(scene, camera);
 }
 
@@ -3172,6 +3168,7 @@ window.addEventListener("resize", () => {
         window.innerWidth,
         window.innerHeight
     );
+    container.appenChild(renderer.domElement);
 });
 
 console.log("LAGOS LEGENDS: GAME LOADED!");
