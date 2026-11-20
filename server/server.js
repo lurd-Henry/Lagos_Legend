@@ -1775,7 +1775,7 @@ app.post(
     authenticate,
     async (req, res) => {
 
-        const { job_type, idempotency_key } = req.body;
+        const { job_type, idempotencyKey } = req.body;
 
         // Validate job type
         if (
@@ -1790,8 +1790,8 @@ app.post(
 
         // Validate idempotency key
         if (
-            typeof idempotency_key !== "string" ||
-            !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotency_key)
+            typeof idempotencyKey !== "string" ||
+            !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotencyKey)
         ) {
             return res.status(400).json({
                 status: "error",
