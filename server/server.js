@@ -1775,38 +1775,81 @@ app.post(
     authenticate,
     async (req, res) => {
 
-        const { jobId } = req.body;
+        const { job_type, idempotency_key } = req.body;
 
+        // Validate job type
         if (
-            !Number.isSafeInteger(jobId) ||
-            jobId <= 0
+            typeof job_type !== "string" ||
+            !job_type.trim()
         ) {
             return res.status(400).json({
                 status: "error",
-                message: "Invalid job."
+                message: "Invalid job type."
             });
         }
 
+        // Validate idempotency key
+        if (
+            typeof idempotency_key !== "string" ||
+            !/^[a-zA-Z0-9_-]{8,100}$/.test(idempotency_key)
+        ) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid job request."
+            });
+        }
+
+        const client = await pool.connect();
+
         try {
 
-            const jobResult = await pool.query(
+            await client.query("BEGIN");
+
+            // Find the requested job.
+            const jobResult = await client.query(
                 `SELECT id, name, job_type, base_pay
                  FROM jobs
-                 WHERE id = $1
-                 AND is_active = TRUE`,
-                [jobId]
+                 WHERE LOWER(job_type) = LOWER($1)
+                 AND is_active = TRUE
+                 LIMIT 1`,
+                [job_type.trim()]
             );
 
             if (jobResult.rowCount === 0) {
+
+                await client.query("ROLLBACK");
+
                 return res.status(404).json({
                     status: "error",
-                    message: "Job not found."
+                    message: "This job is currently unavailable."
                 });
+
             }
 
             const job = jobResult.rows[0];
 
-            await pool.query(
+            // Prevent replacing an existing active shift.
+            const existingJob = await client.query(
+                `SELECT job_id
+                 FROM player_jobs
+                 WHERE player_id = $1
+                 FOR UPDATE`,
+                [req.user.id]
+            );
+
+            if (existingJob.rowCount > 0) {
+
+                await client.query("ROLLBACK");
+
+                return res.status(409).json({
+                    status: "error",
+                    message: "You already have an active job."
+                });
+
+            }
+
+            // Register the player's job.
+            await client.query(
                 `INSERT INTO player_jobs
                  (
                     player_id,
@@ -1814,17 +1857,13 @@ app.post(
                     current_shift_started_at,
                     updated_at
                  )
-                 VALUES ($1, $2, NOW(), NOW())
-
-                 ON CONFLICT (player_id)
-                 DO UPDATE SET
-                    job_id = EXCLUDED.job_id,
-                    current_shift_started_at = NOW(),
-                    updated_at = NOW()`,
+                 VALUES ($1, $2, NOW(), NOW())`,
                 [req.user.id, job.id]
             );
 
-            res.json({
+            await client.query("COMMIT");
+
+            return res.json({
                 status: "success",
                 message: `You started working as a ${job.name}.`,
                 job: {
@@ -1837,12 +1876,21 @@ app.post(
 
         } catch (error) {
 
-            console.error("Start job error:", error.message);
+            await client.query("ROLLBACK");
 
-            res.status(500).json({
+            console.error(
+                "Start job error:",
+                error.message
+            );
+
+            return res.status(500).json({
                 status: "error",
                 message: "Unable to start job."
             });
+
+        } finally {
+
+            client.release();
 
         }
 
