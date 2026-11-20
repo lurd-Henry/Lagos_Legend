@@ -881,7 +881,7 @@ canvas {
 #player-status {
     position: absolute;
 
-    top: 120px;
+    top: 160px;
     right: 20px;
 
     width: 190px;
@@ -1145,6 +1145,7 @@ canvas {
 ========================================================= */
 
 .jobs-open-button {
+    display: none;
     position: fixed;
     top: 150px;
     right: 16px;
