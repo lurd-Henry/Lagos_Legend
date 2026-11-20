@@ -3144,7 +3144,14 @@ let moveZ = characterCreationActive ? 0 : joystickY;
     // =====================================
     // RENDER
     // =====================================
-
+    console.log(
+        "Scene objects:",
+        scene.children.length,
+        "Player:",
+        player?.position,
+        "Camera:",
+        camera.postion
+        );
     renderer.render(scene, camera);
 }
 
