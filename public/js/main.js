@@ -623,31 +623,40 @@ async function startJob(jobType) {
 
     try {
 
-      const idempotencyKey = crypto.randomUUID();
+     const response = await fetch(
+    "/api/jobs/start",
+    {
+        method: "POST",
 
-const response = await fetch("/api/jobs/start", {
-    method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
 
-    headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-    },
+        body: JSON.stringify({
 
-    body: JSON.stringify({
-        job_type: jobType,
-        idempotency_key: idempotencyKey
-    })
-});
+            job_type: jobType,
 
-const data = await response.json();
+            idempotency_key: crypto.randomUUID()
+
+        })
+    }
+);
 
 if (!response.ok) {
-    console.error("Job start failed:", data);
+
+    console.error(
+        "Job start failed:",
+        data
+    );
 
     throw new Error(
-        data.error || data.message || "Unable to start job."
+        data.message || "Unable to start job."
     );
+
 }
+
+return data;
 
         if (!response.ok || data.status !== "success") {
 
