@@ -2561,8 +2561,8 @@ app.post("/api/jobs/complete", authenticate, async (req, res) => {
     try {
 
         const idempotencyKey =
-            typeof req.body?.idempotency_key === "string"
-                ? req.body.idempotency_key.trim()
+            typeof req.body?.idempotencyKey === "string"
+                ? req.body.idempotencyKey.trim()
                 : "";
 
         if (!idempotencyKey) {
