@@ -648,7 +648,6 @@ if (!response.ok) {
         data.error || data.message || "Unable to start job."
     );
 }
-        const data = await response.json();
 
         if (!response.ok || data.status !== "success") {
 
