@@ -1122,8 +1122,6 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-container.appendChild(renderer.domElement);
-
 // =====================================
 // LIGHTING
 // =====================================
