@@ -34,6 +34,10 @@ window.addEventListener("unhandledrejection", (event) => {
 // =====================================
 
 const container = document.getElementById("game-container");
+console.log("Container:", container);
+console.log("Container type:", container?.constructor?.name);
+console.log("appendChild:", typeof container?.appendChild);
+
 const coordinates = document.getElementById("coordinates");
 // =====================================
 // PLAYER HUD SYSTEM
