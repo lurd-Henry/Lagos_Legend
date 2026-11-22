@@ -3058,19 +3058,24 @@ let moveZ = characterCreationActive ? 0 : joystickY;
         Math.min(1, delta * 12);
 
     // Smoothly bring the camera behind the character.
-    if (cameraFollowEnabled) {
+    const targetPlayerYaw = Math.atan2(
+    worldX,
+    worldZ
+);
 
-        const cameraAngleDifference = Math.atan2(
-            Math.sin(player.rotation.y - cameraYaw),
-            Math.cos(player.rotation.y - cameraYaw)
-        );
+const playerAngleDifference = Math.atan2(
+    Math.sin(targetPlayerYaw - player.rotation.y),
+    Math.cos(targetPlayerYaw - player.rotation.y)
+);
 
-        cameraYaw += cameraAngleDifference *
-            Math.min(1, delta * cameraTurnSpeed);
-
-    }
+player.rotation.y += playerAngleDifference *
+    Math.min(1, delta * 12);
 
 }
+        player.rotation.y = Math.atan2(
+    worldX,
+    worldZ
+);
 
         player.userData.animate(
             clock.elapsedTime,
