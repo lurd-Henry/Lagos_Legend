@@ -459,65 +459,60 @@ setCameraYaw(yaw) {
     // PLAYER DIRECTION
     // ==========================================
 
-    drawPlayer() {
+   drawPlayer() {
 
-        if (!this.player) return;
+    if (!this.player) return;
 
-        const width = this.canvas.clientWidth;
-        const height = this.canvas.clientHeight;
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
 
-        const ctx = this.ctx;
+    const ctx = this.ctx;
 
-        const x = width / 2;
-        const y = height / 2;
+    const x = width / 2;
+    const y = height / 2;
 
-        // Player glow.
+    ctx.save();
 
-        ctx.beginPath();
+    ctx.translate(x, y);
 
-        ctx.arc(
-            x,
-            y,
-            this.isExpanded ? 17 : 13,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fillStyle = "rgba(59,130,246,0.22)";
-        ctx.fill();
-
-        // Directional arrow.
-        // The arrow always points upwards.
-
-        ctx.save();
-
-        ctx.translate(x, y);
-
-// On the minimap, the map rotates beneath the player.
-// On the expanded map, north stays fixed and the arrow rotates.
-ctx.rotate(this.isExpanded ? -this.cameraYaw : 0);
-
-        ctx.beginPath();
-
-        ctx.moveTo(0, -12);
-        ctx.lineTo(8, 9);
-        ctx.lineTo(0, 5);
-        ctx.lineTo(-8, 9);
-
-        ctx.closePath();
-
-        ctx.fillStyle = "#38bdf8";
-        ctx.fill();
-
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
-
-        ctx.stroke();
-
-        ctx.restore();
-
+    // Expanded map is north-up, so rotate the player arrow.
+    // Minimap rotates with the camera, so the arrow stays upright.
+    if (this.isExpanded) {
+        ctx.rotate(-this.cameraYaw);
     }
 
+    // Player glow
+    ctx.beginPath();
+    ctx.arc(
+        0,
+        0,
+        this.isExpanded ? 17 : 13,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "rgba(56,189,248,0.25)";
+    ctx.fill();
+
+    // Direction arrow
+    ctx.beginPath();
+
+    ctx.moveTo(0, -14);
+    ctx.lineTo(9, 10);
+    ctx.lineTo(0, 6);
+    ctx.lineTo(-9, 10);
+
+    ctx.closePath();
+
+    ctx.fillStyle = "#38bdf8";
+    ctx.fill();
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    ctx.restore();
+}
 
     // ==========================================
     // MAP COMPASS
