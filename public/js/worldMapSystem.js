@@ -16,6 +16,7 @@ export class WorldMapSystem {
 
         // Minimap zoom.
         this.zoom = 1.5;
+        this.cameraYaw = 0;
 
         this.createUI();
         this.createCanvas();
@@ -26,7 +27,9 @@ export class WorldMapSystem {
         });
 
     }
-
+setCameraYaw(yaw) {
+    this.cameraYaw = yaw;
+}
 
     // ==========================================
     // UI
@@ -207,9 +210,9 @@ export class WorldMapSystem {
         const dx = (x - playerX) * scale;
         const dz = (z - playerZ) * scale;
 
-        const angle = this.isExpanded
-            ? 0
-            : this.player.rotation.y;
+       const angle = this.isExpanded
+    ? 0
+    : this.cameraYaw;
 
         const rotatedX =
             dx * Math.cos(angle) -
@@ -489,6 +492,10 @@ export class WorldMapSystem {
         ctx.save();
 
         ctx.translate(x, y);
+
+// On the minimap, the map rotates beneath the player.
+// On the expanded map, north stays fixed and the arrow rotates.
+ctx.rotate(this.isExpanded ? -this.cameraYaw : 0);
 
         ctx.beginPath();
 
