@@ -2471,12 +2471,7 @@ const cameraSensitivity = 0.006;
 // =====================================
 
 function updateCamera(delta) {
-    const followAlpha = 1 - Math.exp(-8 * delta);
-
-camera.position.lerp(
-    targetPosition,
-    followAlpha
-);
+ 
 
     const indoor = interiorSystem.isInside;
 
@@ -2537,7 +2532,12 @@ camera.position.lerp(
         cameraY,
         cameraZ
     );
+   const followAlpha = 1 - Math.exp(-8 * delta);
 
+camera.position.lerp(
+    targetPosition,
+    followAlpha
+);
     // Snap camera on first frame after entering
     if (indoor && !cameraWasInside) {
 
