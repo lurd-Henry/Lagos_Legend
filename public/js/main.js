@@ -2470,7 +2470,13 @@ const cameraSensitivity = 0.006;
 // THIRD-PERSON CAMERA SYSTEM
 // =====================================
 
-function updateCamera() {
+function updateCamera(delta) {
+    const followAlpha = 1 - Math.exp(-8 * delta);
+
+camera.position.lerp(
+    targetPosition,
+    followAlpha
+);
 
     const indoor = interiorSystem.isInside;
 
@@ -2539,10 +2545,16 @@ function updateCamera() {
 
     } else {
 
-        camera.position.lerp(
-            targetPosition,
-            0.15
-        );
+       const followSmoothness = 8;
+
+const followAlpha = 1 - Math.exp(
+    -followSmoothness * clock.getDelta()
+);
+
+camera.position.lerp(
+    targetPosition,
+    followAlpha
+);
 
     }
 
@@ -2551,6 +2563,7 @@ function updateCamera() {
         player.position.y + 1.5,
         player.position.z
     );
+    worldMap?.setCameraYaw(cameraYaw);
 window.worldMapSystem?.setCameraYaw(cameraYaw);
     cameraWasInside = indoor;
 
@@ -3089,7 +3102,7 @@ let moveZ = characterCreationActive ? 0 : joystickY;
     // CAMERA AND HUD
     // =====================================
 
-    updateCamera();
+    updateCamera(delta);
 
     if (
     vehicleSystem.isDriving ||
