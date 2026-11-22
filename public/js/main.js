@@ -3072,11 +3072,7 @@ player.rotation.y += playerAngleDifference *
     Math.min(1, delta * 12);
 
 }
-        player.rotation.y = Math.atan2(
-    worldX,
-    worldZ
-);
-
+        
         player.userData.animate(
             clock.elapsedTime,
             moving,
