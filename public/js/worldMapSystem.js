@@ -477,9 +477,13 @@ setCameraYaw(yaw) {
 
     // Expanded map is north-up, so rotate the player arrow.
     // Minimap rotates with the camera, so the arrow stays upright.
-    if (this.isExpanded) {
-        ctx.rotate(-this.cameraYaw);
-    }
+    const playerYaw = this.player.rotation.y;
+
+const arrowRotation = this.isExpanded
+    ? playerYaw
+    : playerYaw - this.cameraYaw;
+
+ctx.rotate(arrowRotation);
 
     // Player glow
     ctx.beginPath();
