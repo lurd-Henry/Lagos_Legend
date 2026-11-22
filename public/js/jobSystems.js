@@ -184,13 +184,10 @@ export class JobSystems {
     // =====================================
     // START DELIVERY
     // =====================================
-
 async startDelivery() {
 
     if (this.activeJob) {
-
-        console.warn("A job is already active.");
-
+        console.warn("A delivery is already active.");
         return null;
     }
 
@@ -199,11 +196,7 @@ async startDelivery() {
         const result = await window.lagosJobs?.start("delivery");
 
         if (!result) {
-
-            console.warn(
-                "Delivery job could not be started."
-            );
-
+            console.warn("Delivery job could not be started.");
             return null;
         }
 
@@ -212,40 +205,35 @@ async startDelivery() {
         this.activeJob = {
             type: "delivery",
 
-            pickup: {
-                ...this.pickupLocation
-            },
+            pickup: { ...this.pickupLocation },
 
-            destination: {
-                ...destination
-            },
+            destination: { ...destination },
 
-            phase: "pickup",
+            phase: "delivery",
 
             startedAt: Date.now()
         };
 
-        this.jobPhase = "pickup";
+        this.jobPhase = "delivery";
 
-        // The attendant gives the player the package
-        // immediately after accepting the assignment.
-        this.pickupPackage();
+        // Show the delivery destination immediately.
+        this.showMarker(destination);
 
-        console.log(
-            "Delivery job started:",
-            this.activeJob
+        this.showJobUI(
+            "Package collected! Deliver the package to:",
+            destination.name
         );
+
+        console.log("Dispatch assignment accepted!");
+        console.log("Delivery destination:", destination);
 
         return this.activeJob;
 
     } catch (error) {
 
-        console.error(
-            "Unable to start delivery job:",
-            error
-        );
-
+        console.error("Unable to start delivery:", error);
         return null;
+
     }
 }
 
