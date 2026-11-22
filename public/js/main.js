@@ -2465,7 +2465,9 @@ let lastMouseX = 0;
 let lastMouseY = 0;
 
 const cameraSensitivity = 0.006;
+let cameraFollowEnabled = true;
 
+const cameraTurnSpeed = 5;
 // =====================================
 // THIRD-PERSON CAMERA SYSTEM
 // =====================================
@@ -3004,47 +3006,71 @@ let moveZ = characterCreationActive ? 0 : joystickY;
 
         if (moving) {
 
-            const forwardX = -Math.sin(cameraYaw);
-            const forwardZ = -Math.cos(cameraYaw);
+    const forwardX = -Math.sin(cameraYaw);
+    const forwardZ = -Math.cos(cameraYaw);
 
-            const rightX = Math.cos(cameraYaw);
-            const rightZ = -Math.sin(cameraYaw);
+    const rightX = Math.cos(cameraYaw);
+    const rightZ = -Math.sin(cameraYaw);
 
-            const worldX =
-                rightX * direction.x +
-                forwardX * -direction.y;
+    const worldX =
+        rightX * direction.x +
+        forwardX * -direction.y;
 
-            const worldZ =
-                rightZ * direction.x +
-                forwardZ * -direction.y;
+    const worldZ =
+        rightZ * direction.x +
+        forwardZ * -direction.y;
 
-            if (interiorSystem.isInside) {
+    if (interiorSystem.isInside) {
 
-    interiorSystem.movePlayer(
-        player,
+        interiorSystem.movePlayer(
+            player,
+            worldX,
+            worldZ,
+            speed,
+            delta
+        );
+
+    } else {
+
+        world.movePlayer(
+            player,
+            worldX,
+            worldZ,
+            speed,
+            delta
+        );
+
+    }
+
+    // Calculate the direction the character is moving.
+    const targetPlayerYaw = Math.atan2(
         worldX,
-        worldZ,
-        speed,
-        delta
+        worldZ
     );
 
-} else {
-
-    world.movePlayer(
-        player,
-        worldX,
-        worldZ,
-        speed,
-        delta
+    // Smoothly turn the character.
+    const playerAngleDifference = Math.atan2(
+        Math.sin(targetPlayerYaw - player.rotation.y),
+        Math.cos(targetPlayerYaw - player.rotation.y)
     );
+
+    player.rotation.y += playerAngleDifference *
+        Math.min(1, delta * 12);
+
+    // Smoothly bring the camera behind the character.
+    if (cameraFollowEnabled) {
+
+        const cameraAngleDifference = Math.atan2(
+            Math.sin(player.rotation.y - cameraYaw),
+            Math.cos(player.rotation.y - cameraYaw)
+        );
+
+        cameraYaw += cameraAngleDifference *
+            Math.min(1, delta * cameraTurnSpeed);
+
+    }
 
 }
-
-            player.rotation.y = Math.atan2(
-                worldX,
-                worldZ
-            );
-        }
 
         player.userData.animate(
             clock.elapsedTime,
