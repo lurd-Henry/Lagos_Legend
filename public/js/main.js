@@ -2551,7 +2551,7 @@ function updateCamera() {
         player.position.y + 1.5,
         player.position.z
     );
-
+window.worldMapSystem?.setCameraYaw(cameraYaw);
     cameraWasInside = indoor;
 
 }
