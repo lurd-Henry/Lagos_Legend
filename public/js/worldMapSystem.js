@@ -7,7 +7,6 @@ export class WorldMapSystem {
         this.player = player;
         this.worldSize = worldSize;
 
-        // World boundaries
         this.min = -265;
         this.max = 265;
 
@@ -15,15 +14,16 @@ export class WorldMapSystem {
 
         this.isExpanded = false;
 
+        // Minimap zoom.
+        this.zoom = 1.5;
+
         this.createUI();
         this.createCanvas();
-
         this.resizeCanvas();
 
-        window.addEventListener(
-            "resize",
-            () => this.resizeCanvas()
-        );
+        window.addEventListener("resize", () => {
+            this.resizeCanvas();
+        });
 
     }
 
@@ -37,19 +37,9 @@ export class WorldMapSystem {
         const container =
             document.getElementById("game-container");
 
-        if (!container) {
+        if (!container) return;
 
-            console.warn(
-                "WorldMapSystem: #game-container not found."
-            );
-
-            return;
-
-        }
-
-
-        const wrapper =
-            document.createElement("div");
+        const wrapper = document.createElement("div");
 
         wrapper.id = "world-minimap";
 
@@ -57,7 +47,7 @@ export class WorldMapSystem {
 
             <div id="world-minimap-header">
 
-                <span>🗺️ LAGOS </span>
+                <span>🗺 LAGOS</span>
 
                 <button
                     id="world-map-expand"
@@ -73,50 +63,36 @@ export class WorldMapSystem {
 
             <div id="world-map-legend">
 
-                <span>🔴 YOU</span>
-                <span>🏪 KIOSK</span>
-                <span>📦 JOB</span>
-                <span>🚌 BUS</span>
+                <span>▲ YOU</span>
+                <span>● LOCATION</span>
+                <span>━ ROAD</span>
 
             </div>
 
-        `;
+            <div id="world-map-coordinates">
+                LAGOS CITY
+            </div>
 
+        `;
 
         container.appendChild(wrapper);
 
         this.wrapper = wrapper;
 
         this.expandButton =
-            wrapper.querySelector(
-                "#world-map-expand"
-            );
+            wrapper.querySelector("#world-map-expand");
 
+        this.canvas =
+            wrapper.querySelector("#world-map-canvas");
 
         this.expandButton.addEventListener(
             "click",
-            () => {
-
-                this.toggleExpanded();
-
-            }
+            () => this.toggleExpanded()
         );
 
-
-        // Tap the map itself to expand it.
-        wrapper.addEventListener(
+        this.canvas.addEventListener(
             "click",
-            (event) => {
-
-                if (
-                    event.target === this.canvas
-                ) {
-
-                    this.toggleExpanded();
-
-                }
-
-            }
+            () => this.toggleExpanded()
         );
 
     }
@@ -128,41 +104,33 @@ export class WorldMapSystem {
 
     createCanvas() {
 
-        this.canvas =
-            this.wrapper.querySelector(
-                "#world-map-canvas"
-            );
+        if (!this.canvas) return;
 
-        this.ctx =
-            this.canvas.getContext("2d");
+        this.ctx = this.canvas.getContext("2d");
 
     }
 
 
     resizeCanvas() {
 
-        if (!this.canvas) return;
+        if (!this.canvas || !this.ctx) return;
 
-        const rect =
-            this.canvas.getBoundingClientRect();
+        const rect = this.canvas.getBoundingClientRect();
 
-        const dpr =
-            Math.min(
-                window.devicePixelRatio || 1,
-                2
-            );
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2
+        );
 
-        this.canvas.width =
-            Math.max(
-                1,
-                Math.floor(rect.width * dpr)
-            );
+        this.canvas.width = Math.max(
+            1,
+            Math.floor(rect.width * dpr)
+        );
 
-        this.canvas.height =
-            Math.max(
-                1,
-                Math.floor(rect.height * dpr)
-            );
+        this.canvas.height = Math.max(
+            1,
+            Math.floor(rect.height * dpr)
+        );
 
         this.ctx.setTransform(
             dpr,
@@ -177,44 +145,32 @@ export class WorldMapSystem {
 
 
     // ==========================================
-    // ADD LOCATION
+    // LOCATIONS
     // ==========================================
 
     addLocation({
-
         id,
         name,
         type,
         x,
         z,
         icon = "📍"
-
     }) {
 
-        // Prevent duplicate locations.
-        const existing =
-            this.locations.find(
-                location => location.id === id
-            );
+        const existing = this.locations.find(
+            location => location.id === id
+        );
 
-        if (existing) {
-
-            return existing;
-
-        }
-
+        if (existing) return existing;
 
         const location = {
-
             id,
             name,
             type,
             x,
             z,
             icon
-
         };
-
 
         this.locations.push(location);
 
@@ -223,51 +179,50 @@ export class WorldMapSystem {
     }
 
 
-    // ==========================================
-    // REMOVE LOCATION
-    // ==========================================
-
     removeLocation(id) {
 
-        this.locations =
-            this.locations.filter(
-                location =>
-                    location.id !== id
-            );
+        this.locations = this.locations.filter(
+            location => location.id !== id
+        );
 
     }
 
 
     // ==========================================
-    // WORLD → MAP
+    // WORLD TO MAP
     // ==========================================
 
     worldToMap(x, z) {
 
-        const rect =
-            this.canvas.getBoundingClientRect();
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
 
-        const width = rect.width;
-        const height = rect.height;
+        const playerX = this.player.position.x;
+        const playerZ = this.player.position.z;
 
+        const scale =
+            Math.min(width, height) /
+            (this.isExpanded ? 530 : 180);
 
-        const normalizedX =
-            (x - this.min) /
-            (this.max - this.min);
+        const dx = (x - playerX) * scale;
+        const dz = (z - playerZ) * scale;
 
+        const angle = this.isExpanded
+            ? 0
+            : this.player.rotation.y;
 
-        const normalizedZ =
-            (z - this.min) /
-            (this.max - this.min);
+        const rotatedX =
+            dx * Math.cos(angle) -
+            dz * Math.sin(angle);
 
+        const rotatedY =
+            dx * Math.sin(angle) +
+            dz * Math.cos(angle);
 
         return {
 
-            x:
-                normalizedX * width,
-
-            y:
-                normalizedZ * height
+            x: width / 2 + rotatedX,
+            y: height / 2 + rotatedY
 
         };
 
@@ -275,194 +230,137 @@ export class WorldMapSystem {
 
 
     // ==========================================
-    // DRAW BACKGROUND
+    // BACKGROUND
     // ==========================================
 
     drawBackground() {
 
-        const rect =
-            this.canvas.getBoundingClientRect();
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
 
-        const width = rect.width;
-        const height = rect.height;
+        const ctx = this.ctx;
 
+        ctx.fillStyle = "#17231f";
 
-        // Background
-        this.ctx.fillStyle =
-            "#111827";
+        ctx.fillRect(0, 0, width, height);
 
-        this.ctx.fillRect(
-            0,
-            0,
-            width,
-            height
-        );
+        // Subtle terrain grid.
 
+        ctx.strokeStyle = "rgba(255,255,255,0.035)";
+        ctx.lineWidth = 1;
 
-        // World boundary
-        this.ctx.strokeStyle =
-            "rgba(255,255,255,0.25)";
+        const gridSize = 30;
 
-        this.ctx.lineWidth = 1;
+        for (let x = 0; x < width; x += gridSize) {
 
-        this.ctx.strokeRect(
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+
+        }
+
+        for (let y = 0; y < height; y += gridSize) {
+
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+
+        }
+
+        // Map boundary.
+
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 2;
+
+        ctx.strokeRect(
             1,
             1,
             width - 2,
             height - 2
         );
 
+    }
 
-        // ======================================
-        // ROADS
-        // ======================================
+
+    // ==========================================
+    // ROADS
+    // ==========================================
+
+    drawRoads() {
 
         const roads = [
+            -240,
             -180,
             -120,
             -60,
             0,
             60,
             120,
-            180
+            180,
+            240
         ];
 
+        const ctx = this.ctx;
 
-        this.ctx.strokeStyle =
-            "rgba(255,255,255,0.13)";
+        // Secondary roads.
 
-        this.ctx.lineWidth = 5;
-
-
-        // Horizontal roads
+        ctx.strokeStyle = "#53635a";
+        ctx.lineWidth = this.isExpanded ? 5 : 4;
 
         for (const z of roads) {
 
-            const start =
-                this.worldToMap(
-                    this.min,
-                    z
-                );
+            const start = this.worldToMap(this.min, z);
+            const end = this.worldToMap(this.max, z);
 
-            const end =
-                this.worldToMap(
-                    this.max,
-                    z
-                );
-
-
-            this.ctx.beginPath();
-
-            this.ctx.moveTo(
-                start.x,
-                start.y
-            );
-
-            this.ctx.lineTo(
-                end.x,
-                end.y
-            );
-
-            this.ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
 
         }
-
-
-        // Vertical roads
 
         for (const x of roads) {
 
-            const start =
-                this.worldToMap(
-                    x,
-                    this.min
-                );
+            const start = this.worldToMap(x, this.min);
+            const end = this.worldToMap(x, this.max);
 
-            const end =
-                this.worldToMap(
-                    x,
-                    this.max
-                );
-
-
-            this.ctx.beginPath();
-
-            this.ctx.moveTo(
-                start.x,
-                start.y
-            );
-
-            this.ctx.lineTo(
-                end.x,
-                end.y
-            );
-
-            this.ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
 
         }
 
-    }
+        // Main roads.
 
+        ctx.strokeStyle = "#87958a";
+        ctx.lineWidth = this.isExpanded ? 9 : 6;
 
-    // ==========================================
-    // DRAW LOCATION
-    // ==========================================
+        for (const z of [-120, 0, 120]) {
 
-    drawLocation(location) {
+            const start = this.worldToMap(this.min, z);
+            const end = this.worldToMap(this.max, z);
 
-        const position =
-            this.worldToMap(
-                location.x,
-                location.z
-            );
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
 
+        }
 
-        // Marker circle
+        for (const x of [-120, 0, 120]) {
 
-        this.ctx.beginPath();
+            const start = this.worldToMap(x, this.min);
+            const end = this.worldToMap(x, this.max);
 
-        this.ctx.arc(
-            position.x,
-            position.y,
-            5,
-            0,
-            Math.PI * 2
-        );
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
 
-
-        this.ctx.fillStyle =
-            this.getLocationColor(
-                location.type
-            );
-
-        this.ctx.fill();
-
-
-        this.ctx.strokeStyle =
-            "rgba(255,255,255,0.9)";
-
-        this.ctx.lineWidth = 1;
-
-        this.ctx.stroke();
-
-
-        // Icon
-
-        this.ctx.font =
-            "12px sans-serif";
-
-        this.ctx.textAlign =
-            "center";
-
-        this.ctx.textBaseline =
-            "middle";
-
-
-        this.ctx.fillText(
-            location.icon,
-            position.x,
-            position.y - 9
-        );
+        }
 
     }
 
@@ -473,31 +371,81 @@ export class WorldMapSystem {
 
     getLocationColor(type) {
 
-        switch (type) {
+        const colors = {
 
-            case "kiosk":
-                return "#d8a13b";
+            kiosk: "#eab54b",
+            job: "#f59e0b",
+            bus: "#60a5fa",
+            bank: "#4ade80",
+            hospital: "#f87171",
+            shop: "#c084fc",
+            restaurant: "#fb923c"
 
-            case "job":
-                return "#f59e0b";
+        };
 
-            case "bus":
-                return "#3b82f6";
+        return colors[type] || "#ffffff";
 
-            case "bank":
-                return "#22c55e";
+    }
 
-            case "hospital":
-                return "#ef4444";
 
-            case "shop":
-                return "#a855f7";
+    // ==========================================
+    // DRAW LOCATIONS
+    // ==========================================
 
-            case "restaurant":
-                return "#f97316";
+    drawLocation(location) {
 
-            default:
-                return "#ffffff";
+        const position = this.worldToMap(
+            location.x,
+            location.z
+        );
+
+        const ctx = this.ctx;
+
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
+
+        if (
+            position.x < -20 ||
+            position.x > width + 20 ||
+            position.y < -20 ||
+            position.y > height + 20
+        ) return;
+
+        const radius = this.isExpanded ? 6 : 4;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            position.x,
+            position.y,
+            radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            this.getLocationColor(location.type);
+
+        ctx.fill();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+
+        ctx.stroke();
+
+        if (this.isExpanded) {
+
+            ctx.font = "12px Arial";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+
+            ctx.fillStyle = "#ffffff";
+
+            ctx.fillText(
+                location.name,
+                position.x + 10,
+                position.y
+            );
 
         }
 
@@ -505,65 +453,111 @@ export class WorldMapSystem {
 
 
     // ==========================================
-    // PLAYER
+    // PLAYER DIRECTION
     // ==========================================
 
     drawPlayer() {
 
         if (!this.player) return;
 
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
 
-        const position =
-            this.worldToMap(
-                this.player.position.x,
-                this.player.position.z
-            );
+        const ctx = this.ctx;
 
+        const x = width / 2;
+        const y = height / 2;
 
-        // Glow
+        // Player glow.
 
-        this.ctx.beginPath();
+        ctx.beginPath();
 
-        this.ctx.arc(
-            position.x,
-            position.y,
-            8,
+        ctx.arc(
+            x,
+            y,
+            this.isExpanded ? 17 : 13,
             0,
             Math.PI * 2
         );
 
+        ctx.fillStyle = "rgba(59,130,246,0.22)";
+        ctx.fill();
 
-        this.ctx.fillStyle =
-            "rgba(239,68,68,0.25)";
+        // Directional arrow.
+        // The arrow always points upwards.
 
-        this.ctx.fill();
+        ctx.save();
+
+        ctx.translate(x, y);
+
+        ctx.beginPath();
+
+        ctx.moveTo(0, -12);
+        ctx.lineTo(8, 9);
+        ctx.lineTo(0, 5);
+        ctx.lineTo(-8, 9);
+
+        ctx.closePath();
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.fill();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+
+        ctx.stroke();
+
+        ctx.restore();
+
+    }
 
 
-        // Player marker
+    // ==========================================
+    // MAP COMPASS
+    // ==========================================
 
-        this.ctx.beginPath();
+    drawCompass() {
 
-        this.ctx.arc(
-            position.x,
-            position.y,
-            4,
-            0,
-            Math.PI * 2
+        if (!this.isExpanded) return;
+
+        const ctx = this.ctx;
+
+        ctx.save();
+
+        ctx.font = "bold 13px Arial";
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "#ffffff";
+
+        ctx.fillText(
+            "N",
+            this.canvas.clientWidth - 20,
+            22
         );
 
+        ctx.beginPath();
 
-        this.ctx.fillStyle =
-            "#ef4444";
+        ctx.moveTo(
+            this.canvas.clientWidth - 20,
+            28
+        );
 
-        this.ctx.fill();
+        ctx.lineTo(
+            this.canvas.clientWidth - 25,
+            40
+        );
 
+        ctx.lineTo(
+            this.canvas.clientWidth - 15,
+            40
+        );
 
-        this.ctx.strokeStyle =
-            "#ffffff";
+        ctx.closePath();
 
-        this.ctx.lineWidth = 1.5;
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
 
-        this.ctx.stroke();
+        ctx.restore();
 
     }
 
@@ -574,51 +568,28 @@ export class WorldMapSystem {
 
     draw() {
 
-        if (!this.ctx) return;
+        if (!this.ctx || !this.canvas) return;
 
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
 
-        const rect =
-            this.canvas.getBoundingClientRect();
+        if (!width || !height) return;
 
-
-        if (
-            rect.width === 0 ||
-            rect.height === 0
-        ) {
-
-            return;
-
-        }
-
-
-        this.ctx.clearRect(
-            0,
-            0,
-            rect.width,
-            rect.height
-        );
-
+        this.ctx.clearRect(0, 0, width, height);
 
         this.drawBackground();
 
+        this.drawRoads();
 
-        // Locations
+        for (const location of this.locations) {
 
-        for (
-            const location of this.locations
-        ) {
-
-            this.drawLocation(
-                location
-            );
+            this.drawLocation(location);
 
         }
 
-
-        // Player should always be
-        // drawn last.
-
         this.drawPlayer();
+
+        this.drawCompass();
 
     }
 
@@ -640,41 +611,28 @@ export class WorldMapSystem {
 
     toggleExpanded() {
 
-        this.isExpanded =
-            !this.isExpanded;
-
+        this.isExpanded = !this.isExpanded;
 
         if (this.isExpanded) {
 
-            this.wrapper.classList.add(
-                "expanded"
-            );
+            this.wrapper.classList.add("expanded");
 
-            this.expandButton.textContent =
-                "✕";
+            this.expandButton.textContent = "✕";
 
         } else {
 
-            this.wrapper.classList.remove(
-                "expanded"
-            );
+            this.wrapper.classList.remove("expanded");
 
-            this.expandButton.textContent =
-                "⛶";
+            this.expandButton.textContent = "⛶";
 
         }
 
+        requestAnimationFrame(() => {
 
-        // Canvas dimensions changed.
+            this.resizeCanvas();
+            this.draw();
 
-        requestAnimationFrame(
-            () => {
-
-                this.resizeCanvas();
-                this.draw();
-
-            }
-        );
+        });
 
     }
 
