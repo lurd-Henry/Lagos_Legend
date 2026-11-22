@@ -616,81 +616,43 @@ async function startJob(jobType) {
     const token = getJobAccessToken();
 
     if (!token) {
-
-        console.warn(
-            "Cannot start job: player is not authenticated."
-        );
-
+        console.warn("Player is not authenticated.");
         return null;
-
     }
 
     try {
 
-     const response = await fetch(
-    "/api/jobs/start",
-    {
-        method: "POST",
+        const response = await fetch("/api/jobs/start", {
+            method: "POST",
 
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-        },
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
 
-        body: JSON.stringify({
+            body: JSON.stringify({
+                job_type: jobType,
+                idempotencyKey: generateJobIdempotencyKey(jobType)
+            })
+        });
 
-            job_type: jobType,
-
-            idempotency_key: crypto.randomUUID()
-
-        })
-    }
-);
-
-if (!response.ok) {
-
-    console.error(
-        "Job start failed:",
-        data
-    );
-
-    throw new Error(
-        data.message || "Unable to start job."
-    );
-
-}
-
-return data;
+        const data = await response.json();
 
         if (!response.ok || data.status !== "success") {
-
-            console.warn(
-                "Job start failed:",
-                data.message
-            );
-
+            console.error("Job start failed:", data.message);
             return null;
-
         }
 
-        console.log(
-            "Job started:",
-            data.job
-        );
+        console.log("Job started:", data.job);
 
         return data;
 
     } catch (error) {
 
-        console.error(
-            "Job start request failed:",
-            error
-        );
-
+        console.error("Job start request failed:", error);
         return null;
 
     }
-
 }
 
 
@@ -782,9 +744,9 @@ async function completeJob(jobType = "job") {
                     "Content-Type": "application/json"
                 },
 
-                body: JSON.stringify({
-                    idempotency_key: idempotencyKey
-                })
+               body: JSON.stringify({
+    idempotencyKey: idempotencyKey
+})
             }
         );
 
@@ -810,10 +772,7 @@ async function completeJob(jobType = "job") {
 
             if (window.lagosHUD?.updateWallet) {
 
-                window.lagosHUD.updateWallet(
-                    data.wallet.cash,
-                    data.wallet.bank
-                );
+               window.lagosHUD.updateWallet(data.wallet);
 
             }
 
