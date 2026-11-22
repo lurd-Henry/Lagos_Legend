@@ -3131,7 +3131,7 @@ window.addEventListener("resize", () => {
         window.innerWidth,
         window.innerHeight
     );
-    container.appenChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 });
 
 console.log("LAGOS LEGENDS: GAME LOADED!");
