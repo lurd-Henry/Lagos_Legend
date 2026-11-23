@@ -104,7 +104,61 @@ The current tests cover:
 - Invalid session durations.
 
 Firestore integration tests will be added using the Firebase Emulator Suite.
+## Relationship with Lagos Legends
 
+This backend implementation is being developed within the
+Lagos Legends repository.
+
+Lagos Legends is a browser-based multiplayer life simulation
+project.
+
+The `gaming-backend` directory contains a dedicated backend
+engineering implementation demonstrating Firebase-based
+game infrastructure, score integrity and payment processing.
+
+The implementation is designed to explore backend systems
+that can support:
+
+- Player accounts and profiles.
+- Secure game-score submissions.
+- Weekly leaderboards.
+- Player wallets.
+- Payment processing.
+- Multiplayer services.
+- Audit logging.
+
+The backend modules are developed independently before
+Firebase integration.
+
+## Payment Security
+
+The payment architecture uses:
+
+- Paystack webhook signature verification.
+- Server-side transaction verification.
+- Server-created purchase orders.
+- Firestore transactional wallet credits.
+- Unique payment references.
+- Immutable wallet transaction records.
+
+All wallet amounts are stored in kobo.
+
+A successful payment reference must only be credited once,
+regardless of how many times its webhook is delivered.
+
+## Current Payment Development Status
+
+| Component | Status |
+|---|---|
+| Webhook signature validation | Implemented |
+| Payment event validation | Implemented |
+| Wallet credit service | Initial implementation |
+| Paystack event processing | Initial implementation |
+| Duplicate credit protection | Implemented at service level |
+| Firebase integration | Pending |
+| Paystack API adapter | Pending |
+| Webhook HTTP endpoint | Pending |
+| Firestore integration tests | Pending |
 ## Planned Architecture
 
 ```text
