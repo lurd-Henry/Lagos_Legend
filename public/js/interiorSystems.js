@@ -288,20 +288,433 @@ this.interiorGroup.add(light);
         this.createWindow(-5, 2.8, -7.75);
         this.createWindow(5, 2.8, -7.75);
 
-        if (type === "house") {
-
-            this.createLivingRoom();
-            this.createBedroom();
-
-        } else {
-
-            this.createShop();
-
-        }
+        this.createInteriorLayout(type);
 
         this.createDoor();
 
     }
+    createInteriorLayout(type) {
+
+    switch (type) {
+
+        case "house":
+            this.createLivingRoom();
+            this.createBedroom();
+            break;
+
+        case "bank":
+            this.createBank();
+            break;
+
+        case "hospital":
+            this.createHospital();
+            break;
+
+        case "restaurant":
+            this.createRestaurant();
+            break;
+
+        case "supermarket":
+            this.createSupermarket();
+            break;
+
+        case "barber":
+            this.createBarberShop();
+            break;
+
+        case "clothing":
+            this.createClothingStore();
+            break;
+
+        case "police":
+            this.createPoliceStation();
+            break;
+
+        case "nightclub":
+            this.createNightclub();
+            break;
+
+        case "pharmacy":
+            this.createPharmacy();
+            break;
+
+        case "office":
+            this.createOffice();
+            break;
+
+        default:
+            this.createShop();
+
+    }
+
+}
+
+createFixture(
+    name,
+    width,
+    height,
+    depth,
+    x,
+    y,
+    z,
+    material = this.materials.wood
+) {
+
+    this.createBox(
+        width,
+        height,
+        depth,
+        material,
+        x,
+        y,
+        z
+    );
+
+    this.addFurniture(
+        name,
+        x,
+        z,
+        width,
+        depth
+    );
+
+}
+
+createBank() {
+
+    // Main teller counter
+    this.createFixture(
+        "Bank teller counter",
+        12, 1.3, 1.5,
+        0, 0.8, -5,
+        this.materials.darkWood
+    );
+
+    // Office desks
+    this.createFixture(
+        "Bank office desk",
+        3, 1.2, 2,
+        -6, 0.7, -1,
+        this.materials.wood
+    );
+
+    this.createFixture(
+        "Bank office desk",
+        3, 1.2, 2,
+        6, 0.7, -1,
+        this.materials.wood
+    );
+
+    // Waiting seats
+    for (const x of [-5, 0, 5]) {
+
+        this.createFixture(
+            "Waiting chair",
+            1.5, 0.8, 1.5,
+            x, 0.4, 3,
+            this.materials.fabric
+        );
+
+    }
+
+}
+
+createHospital() {
+
+    this.createFixture(
+        "Hospital reception",
+        12, 1.4, 2,
+        0, 0.8, -5,
+        this.materials.white
+    );
+
+    for (const x of [-5, 5]) {
+
+        this.createFixture(
+            "Hospital bed",
+            3, 0.6, 5,
+            x, 0.5, 0,
+            this.materials.white
+        );
+
+        this.createFixture(
+            "Medical cabinet",
+            1.5, 3, 1.5,
+            x, 1.5, -6.5,
+            this.materials.green
+        );
+
+    }
+
+    this.createFixture(
+        "Medical equipment",
+        2, 1.5, 1,
+        0, 0.8, 3,
+        this.materials.metal
+    );
+
+}
+
+createRestaurant() {
+
+    this.createFixture(
+        "Restaurant service counter",
+        12, 1.4, 2,
+        0, 0.8, -5,
+        this.materials.darkWood
+    );
+
+    for (const x of [-5, 5]) {
+
+        for (const z of [-1, 4]) {
+
+            this.createFixture(
+                "Dining table",
+                3, 0.3, 2,
+                x, 1.4, z,
+                this.materials.wood
+            );
+
+        }
+
+    }
+
+    this.createFixture(
+        "Kitchen counter",
+        5, 1.4, 1.5,
+        5, 0.8, -3,
+        this.materials.metal
+    );
+
+}
+
+createSupermarket() {
+
+    this.createFixture(
+        "Checkout counter",
+        8, 1.3, 2,
+        0, 0.8, -6,
+        this.materials.wood
+    );
+
+    // Shelving aisles
+    for (const x of [-6, -2, 2, 6]) {
+
+        this.createFixture(
+            "Supermarket shelf",
+            1.2, 3, 6,
+            x, 1.5, 0,
+            this.materials.darkWood
+        );
+
+    }
+
+    this.createFixture(
+        "Refrigerator",
+        2, 3.5, 2,
+        -6, 1.75, -5,
+        this.materials.glass
+    );
+
+}
+
+createBarberShop() {
+
+    // Reception
+    this.createFixture(
+        "Barber reception",
+        7, 1.3, 1.5,
+        0, 0.8, -5,
+        this.materials.wood
+    );
+
+    // Barber stations
+    for (const x of [-5, 5]) {
+
+        this.createFixture(
+            "Barber chair",
+            2, 1.5, 2,
+            x, 0.75, 0,
+            this.materials.sofa
+        );
+
+        this.createBox(
+            2.5, 2, 0.1,
+            this.materials.glass,
+            x, 2.2, -7.7
+        );
+
+    }
+
+    this.createFixture(
+        "Waiting bench",
+        6, 0.8, 1.2,
+        0, 0.4, 4,
+        this.materials.fabric
+    );
+
+}
+
+createClothingStore() {
+
+    this.createFixture(
+        "Clothing counter",
+        6, 1.3, 1.5,
+        0, 0.8, -6,
+        this.materials.wood
+    );
+
+    for (const x of [-6, 6]) {
+
+        this.createFixture(
+            "Clothing rack",
+            1.5, 2.5, 5,
+            x, 1.25, 0,
+            this.materials.metal
+        );
+
+    }
+
+    this.createFixture(
+        "Display table",
+        3, 1, 2,
+        0, 0.5, 2,
+        this.materials.darkWood
+    );
+
+    this.createFixture(
+        "Changing room",
+        3, 3, 3,
+        5, 1.5, 4,
+        this.materials.fabric
+    );
+
+}
+
+createPoliceStation() {
+
+    this.createFixture(
+        "Police reception",
+        10, 1.3, 2,
+        0, 0.8, -5,
+        this.materials.darkWood
+    );
+
+    for (const x of [-5, 5]) {
+
+        this.createFixture(
+            "Police office desk",
+            3, 1.2, 2,
+            x, 0.7, 0,
+            this.materials.wood
+        );
+
+    }
+
+    // Holding cell bars
+    for (let x = -2; x <= 2; x += 1) {
+
+        this.createBox(
+            0.12, 3.5, 0.12,
+            this.materials.metal,
+            x, 1.75, 5
+        );
+
+    }
+
+}
+
+createNightclub() {
+
+    this.createFixture(
+        "Nightclub bar",
+        10, 1.5, 2,
+        0, 0.8, -6,
+        this.materials.darkWood
+    );
+
+    this.createFixture(
+        "DJ booth",
+        5, 1.5, 2,
+        0, 0.8, -2,
+        this.materials.metal
+    );
+
+    this.createFixture(
+        "VIP table",
+        3, 1, 2,
+        -6, 0.5, 3,
+        this.materials.wood
+    );
+
+    this.createFixture(
+        "VIP table",
+        3, 1, 2,
+        6, 0.5, 3,
+        this.materials.wood
+    );
+
+    // Dance floor
+    this.createBox(
+        8, 0.12, 5,
+        this.materials.darkWood,
+        0, 0.1, 4
+    );
+
+}
+
+createPharmacy() {
+
+    this.createFixture(
+        "Pharmacy counter",
+        8, 1.3, 1.5,
+        0, 0.8, -5,
+        this.materials.white
+    );
+
+    for (const x of [-6, 6]) {
+
+        this.createFixture(
+            "Medicine shelf",
+            1.2, 3, 6,
+            x, 1.5, 0,
+            this.materials.green
+        );
+
+    }
+
+}
+
+createOffice() {
+
+    this.createFixture(
+        "Office reception",
+        8, 1.3, 1.5,
+        0, 0.8, -5,
+        this.materials.darkWood
+    );
+
+    for (const x of [-5, 5]) {
+
+        this.createFixture(
+            "Office desk",
+            3, 1.2, 2,
+            x, 0.7, 0,
+            this.materials.wood
+        );
+
+    }
+
+    this.createFixture(
+        "Conference table",
+        5, 0.3, 3,
+        0, 1.4, 4,
+        this.materials.wood
+    );
+
+}
+
+
 // =====================================
 // HIDE EXTERIOR WORLD
 // =====================================
