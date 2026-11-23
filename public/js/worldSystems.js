@@ -10,6 +10,114 @@ constructor(scene) {
     this.interactionDistance = 7;
     this.currentInteraction = null;
     this.createInteractionUI();
+    this.buildingLabels = [];
+this.labelVisibilityDistance = 70;
+}
+addBuildingLabel({ name, category, x, y, z, object }) {
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = 512;
+    canvas.height = 128;
+
+    const ctx = canvas.getContext("2d");
+
+    // Background
+    ctx.fillStyle = "rgba(15, 23, 20, 0.92)";
+    ctx.fillRect(8, 8, 496, 112);
+
+    // Gold border
+    ctx.strokeStyle = "#d9a441";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(8, 8, 496, 112);
+
+    // Category
+    ctx.fillStyle = "#d9a441";
+    ctx.font = "bold 23px Arial";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        category.toUpperCase(),
+        256,
+        43
+    );
+
+    // Business name
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 34px Arial";
+
+    ctx.fillText(
+        name.toUpperCase(),
+        256,
+        88,
+        460
+    );
+
+    const texture = new THREE.CanvasTexture(canvas);
+
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false
+    });
+
+    const sprite = new THREE.Sprite(material);
+
+    const labelWidth = Math.max(
+        9,
+        Math.min(15, 7 + name.length * 0.25)
+    );
+
+    sprite.scale.set(labelWidth, 3.2, 1);
+
+    sprite.position.set(x, y, z);
+
+    this.scene.add(sprite);
+
+    this.buildingLabels.push({
+        sprite,
+        object,
+        x,
+        z,
+        name
+    });
+
+    return sprite;
+}
+updateBuildingLabels(player, hidden = false) {
+
+    if (!player) return;
+
+    for (const label of this.buildingLabels) {
+
+        const distance = Math.hypot(
+            player.position.x - label.x,
+            player.position.z - label.z
+        );
+
+        const visible =
+            !hidden &&
+            distance < this.labelVisibilityDistance &&
+            (!label.object || label.object.visible);
+
+        label.sprite.visible = visible;
+
+        if (visible) {
+
+            const fade = THREE.MathUtils.clamp(
+                (this.labelVisibilityDistance - distance) / 20,
+                0,
+                1
+            );
+
+            label.sprite.material.opacity = fade;
+
+        }
+
+    }
+
 }
 // =====================================
 // STATIC COLLIDERS
