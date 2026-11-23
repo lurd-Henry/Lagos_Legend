@@ -1274,7 +1274,15 @@ const residentialColors = [
 // CITY BUILDINGS
 // =====================================
 
-function createCityBuilding(x, z, width, depth, height, color) {
+function createCityBuilding(
+    x,
+    z,
+    width,
+    depth,
+    height,
+    color,
+    details = {}
+) {
 
     const building = new THREE.Group();
 
@@ -1334,15 +1342,39 @@ function createCityBuilding(x, z, width, depth, height, color) {
 
     world.addCollider(x, z, width, depth);
 
+    // Register floating business sign.
+
+world.addBuildingLabel({
+    name: details.name || "COMMERCIAL BUILDING",
+    category: details.category || "BUSINESS",
+    x,
+    y: height + 4,
+    z,
+    object: building
+});
     world.addInteractable({
+
     x,
     z: z + depth / 2 + 2,
+
     type: "building",
+
+    name: details.name || "Commercial Building",
+
     action: () => {
+
         if (interiorSystem) {
-            interiorSystem.enter("shop", x, z);
+
+            interiorSystem.enter(
+                details.interiorType || "shop",
+                x,
+                z
+            );
+
         }
+
     }
+
 });
 }
 
@@ -1675,6 +1707,7 @@ function createBusStop(x, z) {
 // =====================================
 
 const commercialBuildings = [
+
     [-30, -35, 15, 15, 24],
     [30, -35, 15, 15, 18],
     [-30, 35, 16, 15, 28],
@@ -1687,6 +1720,71 @@ const commercialBuildings = [
 
     [-150, -30, 15, 15, 18],
     [150, 30, 15, 15, 23]
+
+];
+
+const commercialBuildingDetails = [
+
+    {
+        name: "First Bank",
+        category: "Banking",
+        interiorType: "bank"
+    },
+
+    {
+        name: "Lagos General Hospital",
+        category: "Healthcare",
+        interiorType: "hospital"
+    },
+
+    {
+        name: "Chow House",
+        category: "Restaurant",
+        interiorType: "restaurant"
+    },
+
+    {
+        name: "Mart & More",
+        category: "Supermarket",
+        interiorType: "supermarket"
+    },
+
+    {
+        name: "Fresh Cuts",
+        category: "Barbershop",
+        interiorType: "barber"
+    },
+
+    {
+        name: "Style District",
+        category: "Fashion",
+        interiorType: "clothing"
+    },
+
+    {
+        name: "Lagos Police Division",
+        category: "Security",
+        interiorType: "police"
+    },
+
+    {
+        name: "The Nightlife",
+        category: "Entertainment",
+        interiorType: "nightclub"
+    },
+
+    {
+        name: "City Pharmacy",
+        category: "Healthcare",
+        interiorType: "pharmacy"
+    },
+
+    {
+        name: "Aura Business Centre",
+        category: "Business",
+        interiorType: "office"
+    }
+
 ];
 
 commercialBuildings.forEach((building, index) => {
@@ -1699,8 +1797,10 @@ commercialBuildings.forEach((building, index) => {
         width,
         depth,
         height,
-        cityColors[index % cityColors.length]
+        cityColors[index % cityColors.length],
+        commercialBuildingDetails[index]
     );
+
 });
 
 // =====================================
