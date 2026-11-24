@@ -1887,6 +1887,15 @@ enter(type, exteriorX, exteriorZ) {
     console.log("Entered interior:", type);
 
 }
+    if (
+    window.lagosBusinessMenu &&
+    type !== "house" &&
+    type !== "police" &&
+    type !== "office" &&
+    type !== "shop"
+) {
+    window.lagosBusinessMenu.open(type);
+}
 
     // =====================================
     // EXIT BUILDING
