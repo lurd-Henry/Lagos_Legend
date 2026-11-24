@@ -14,7 +14,7 @@ import { VehicleSystems } from "./vehicleSystems.js";
 import { JobSystems } from "./jobSystems.js";
 import { JobLocationSystems } from "./jobLocations.js";
 import { WorldMapSystem } from "./worldMapSystem.js";
-import { EconomySystems} from "./EconomySytems.js";
+import { EconomySystems} from "./EconomySystems.js";
 
 // =====================================
 // DEBUGGING - ERROR DETECTOR
