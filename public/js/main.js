@@ -1936,6 +1936,11 @@ interiorSystem = new InteriorSystems(
     camera,
     container
 );
+const businessMenuSystem =
+    new BusinessMenuSystem(document.body);
+
+window.lagosBusinessMenu =
+    businessMenuSystem;
 // =====================================
 // INITIALISE GAME SYSTEMS
 // =====================================
