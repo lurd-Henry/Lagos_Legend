@@ -502,8 +502,8 @@ ctx.rotate(arrowRotation);
     ctx.beginPath();
 
     ctx.moveTo(-9, 10);
-    ctx.lineTo(9, 10);
     ctx.lineTo(0, 6);
+    ctx.lineTo(9, 10);
     ctx.lineTo(0, -14);
 
     ctx.closePath();
