@@ -1994,53 +1994,37 @@ movePlayer(player, moveX, moveZ, speed, delta) {
     // FURNITURE INTERACTIONS
     // =====================================
 
-    interact() {
+   interact() {
 
-        if (!this.isInside) return;
+    if (!this.isInside) return;
 
-        const playerPosition = this.player.position;
+    const nearby = this.getNearestInteractableFurniture();
 
-        let nearest = null;
-        let nearestDistance = Infinity;
+    if (!nearby) return;
 
-        for (const item of this.furniture) {
+    if (nearby.userData.businessCounter) {
 
-            const distance = Math.hypot(
-                playerPosition.x - (1000 + item.x),
-                playerPosition.z - (1000 + item.z)
-            );
+        this.openStore(
+            nearby.userData.businessType
+        );
 
-            if (distance < 3 && distance < nearestDistance) {
-
-                nearest = item;
-                nearestDistance = distance;
-
-            }
-
-        }
-
-        if (!nearest) return;
-
-        if (nearest.name === "Television") {
-
-            alert("The television is currently unavailable.");
-
-        } else if (nearest.name === "Bed") {
-
-            alert("Resting and sleep mechanics coming soon!");
-
-        } else if (
-            nearest.name === "Shop counter"
-        ) {
-
-            alert("Welcome! The Lagos Legends shop system is coming soon.");
-
-        } else {
-
-            alert(nearest.name);
-
-        }
-
+        return;
     }
 
+    if (nearby.userData.serviceType) {
+
+        this.openStore(
+            nearby.userData.serviceType
+        );
+
+        return;
+    }
+
+    if (nearby.userData.type === "exit") {
+
+        this.exit();
+
+        return;
+    }
+}
 }
