@@ -501,10 +501,10 @@ ctx.rotate(arrowRotation);
     // Direction arrow
     ctx.beginPath();
 
-    ctx.moveTo(0, -14);
+    ctx.moveTo(-9, 10);
     ctx.lineTo(9, 10);
     ctx.lineTo(0, 6);
-    ctx.lineTo(-9, 10);
+    ctx.lineTo(0, -14);
 
     ctx.closePath();
 
