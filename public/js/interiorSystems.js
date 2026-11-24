@@ -1885,9 +1885,7 @@ enter(type, exteriorX, exteriorZ) {
     this.exitButton.style.display = "block";
 
     console.log("Entered interior:", type);
-
-}
-    if (
+     if (
     window.lagosBusinessMenu &&
     type !== "house" &&
     type !== "police" &&
@@ -1897,6 +1895,9 @@ enter(type, exteriorX, exteriorZ) {
     window.lagosBusinessMenu.open(type);
 }
 
+
+}
+   
     // =====================================
     // EXIT BUILDING
     // =====================================
