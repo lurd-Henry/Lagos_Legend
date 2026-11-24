@@ -41,7 +41,173 @@ this.interiorSpawnZ = 1008;
 
         this.createMaterials();
         this.createInteractionButton();
+//SHOP INTERIOR
+this.storeCatalog = {
 
+    restaurant: [
+        {
+            id: "jollof",
+            name: "Jollof Rice",
+            price: 2500,
+            category: "food",
+            hunger: 30
+        },
+        {
+            id: "fried-rice",
+            name: "Fried Rice & Chicken",
+            price: 3500,
+            category: "food",
+            hunger: 45
+        },
+        {
+            id: "burger",
+            name: "Burger",
+            price: 3000,
+            category: "food",
+            hunger: 35
+        },
+        {
+            id: "shawarma",
+            name: "Shawarma",
+            price: 2500,
+            category: "food",
+            hunger: 30
+        },
+        {
+            id: "water",
+            name: "Bottled Water",
+            price: 500,
+            category: "food",
+            hunger: 5
+        }
+    ],
+
+    supermarket: [
+        {
+            id: "bread",
+            name: "Bread",
+            price: 1500,
+            category: "food",
+            hunger: 15
+        },
+        {
+            id: "noodles",
+            name: "Instant Noodles",
+            price: 1200,
+            category: "food",
+            hunger: 15
+        },
+        {
+            id: "milk",
+            name: "Milk",
+            price: 1800,
+            category: "food",
+            hunger: 10
+        },
+        {
+            id: "water-pack",
+            name: "Water",
+            price: 500,
+            category: "food",
+            hunger: 5
+        }
+    ],
+
+    clothing: [
+        {
+            id: "shirt",
+            name: "Casual Shirt",
+            price: 8000,
+            category: "clothing"
+        },
+        {
+            id: "trousers",
+            name: "Trousers",
+            price: 10000,
+            category: "clothing"
+        },
+        {
+            id: "sneakers",
+            name: "Sneakers",
+            price: 15000,
+            category: "clothing"
+        },
+        {
+            id: "cap",
+            name: "Cap",
+            price: 5000,
+            category: "clothing"
+        }
+    ],
+
+    hospital: [
+        {
+            id: "treatment",
+            name: "Medical Treatment",
+            price: 5000,
+            category: "health",
+            health: 50
+        },
+        {
+            id: "full-treatment",
+            name: "Full Treatment",
+            price: 12000,
+            category: "health",
+            health: 100
+        }
+    ],
+
+    pharmacy: [
+        {
+            id: "painkiller",
+            name: "Pain Relief",
+            price: 1000,
+            category: "medicine"
+        },
+        {
+            id: "first-aid",
+            name: "First Aid Kit",
+            price: 3500,
+            category: "medicine"
+        }
+    ],
+
+    barber: [
+        {
+            id: "haircut",
+            name: "Haircut",
+            price: 3000,
+            category: "appearance"
+        },
+        {
+            id: "beard",
+            name: "Beard Trim",
+            price: 2000,
+            category: "appearance"
+        }
+    ],
+
+    nightclub: [
+        {
+            id: "entry",
+            name: "Club Entry",
+            price: 3000,
+            category: "entertainment"
+        },
+        {
+            id: "vip",
+            name: "VIP Access",
+            price: 15000,
+            category: "entertainment"
+        },
+        {
+            id: "mocktail",
+            name: "Mocktail",
+            price: 2500,
+            category: "food"
+        }
+    ]
+};
     }
 
     // =====================================
@@ -1709,7 +1875,7 @@ enter(type, exteriorX, exteriorZ) {
     this.player.position.set(
         1000,
         0,
-        1004
+        1008
     );
 
     this.player.rotation.y = Math.PI;
