@@ -379,7 +379,275 @@ createFixture(
     );
 
 }
+//FURNITURES
 
+// =====================================
+// INTERIOR DECORATION HELPERS
+// =====================================
+
+createChair(x, z, material = this.materials.fabric) {
+
+    this.createBox(
+        1.1,
+        0.5,
+        1.1,
+        material,
+        x,
+        0.45,
+        z
+    );
+
+    this.createBox(
+        1.1,
+        1.1,
+        0.35,
+        material,
+        x,
+        1.0,
+        z - 0.35
+    );
+
+    this.addFurniture(
+        "Chair",
+        x,
+        z,
+        1.1,
+        1.1
+    );
+
+}
+
+createSmallTable(
+    x,
+    z,
+    material = this.materials.wood
+) {
+
+    this.createBox(
+        1.8,
+        0.25,
+        1.2,
+        material,
+        x,
+        1.15,
+        z
+    );
+
+    for (const dx of [-0.65, 0.65]) {
+
+        for (const dz of [-0.4, 0.4]) {
+
+            this.createBox(
+                0.12,
+                1.1,
+                0.12,
+                this.materials.darkWood,
+                x + dx,
+                0.55,
+                z + dz
+            );
+
+        }
+
+    }
+
+}
+
+createShelf(
+    x,
+    z,
+    width = 1.2,
+    height = 3,
+    depth = 4
+) {
+
+    this.createBox(
+        width,
+        height,
+        depth,
+        this.materials.darkWood,
+        x,
+        height / 2,
+        z
+    );
+
+    // Shelf lines
+    for (
+        let y = 0.6;
+        y < height;
+        y += 0.7
+    ) {
+
+        this.createBox(
+            width + 0.05,
+            0.08,
+            depth + 0.05,
+            this.materials.wood,
+            x,
+            y,
+            z
+        );
+
+    }
+
+}
+
+createProductDisplay(
+    x,
+    z,
+    material = this.materials.green
+) {
+
+    this.createBox(
+        0.35,
+        0.35,
+        0.35,
+        material,
+        x,
+        0.8,
+        z
+    );
+
+    this.createBox(
+        0.35,
+        0.35,
+        0.35,
+        this.materials.white,
+        x,
+        1.3,
+        z
+    );
+
+    this.createBox(
+        0.35,
+        0.35,
+        0.35,
+        this.materials.fabric,
+        x,
+        1.8,
+        z
+    );
+
+}
+
+createCounter(
+    name,
+    x,
+    z,
+    width = 6,
+    material = this.materials.wood
+) {
+
+    this.createFixture(
+        name,
+        width,
+        1.3,
+        1.5,
+        x,
+        0.8,
+        z,
+        material
+    );
+
+    // Counter top
+    this.createBox(
+        width + 0.15,
+        0.15,
+        1.65,
+        this.materials.white,
+        x,
+        1.5,
+        z
+    );
+
+}
+
+createNeonLight(
+    x,
+    y,
+    z,
+    color
+) {
+
+    const material =
+        new THREE.MeshBasicMaterial({
+            color
+        });
+
+    this.createBox(
+        4,
+        0.08,
+        0.15,
+        material,
+        x,
+        y,
+        z
+    );
+
+}
+
+createPlant(x, z) {
+
+    const pot =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                0.35,
+                0.45,
+                0.6,
+                8
+            ),
+            this.materials.wood
+        );
+
+    pot.position.set(
+        x,
+        0.3,
+        z
+    );
+
+    this.interiorGroup.add(pot);
+
+    const leaves =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                0.75,
+                8,
+                6
+            ),
+            this.materials.green
+        );
+
+    leaves.position.set(
+        x,
+        1.15,
+        z
+    );
+
+    this.interiorGroup.add(leaves);
+
+}
+
+createWallDecor(
+    x,
+    y,
+    z,
+    width = 2,
+    height = 1
+) {
+
+    this.createBox(
+        width,
+        height,
+        0.08,
+        this.materials.darkWood,
+        x,
+        y,
+        z
+    );
+
+}
+
+    
 createBank() {
 
     // Main teller counter
@@ -421,103 +689,241 @@ createBank() {
 
 createHospital() {
 
-    this.createFixture(
+    // Reception
+    this.createCounter(
         "Hospital reception",
-        12, 1.4, 2,
-        0, 0.8, -5,
+        0,
+        -5,
+        10,
         this.materials.white
     );
 
-    for (const x of [-5, 5]) {
+    // Waiting area
+    for (const x of [-5, -2, 2, 5]) {
 
-        this.createFixture(
-            "Hospital bed",
-            3, 0.6, 5,
-            x, 0.5, 0,
+        this.createChair(
+            x,
+            3,
             this.materials.white
-        );
-
-        this.createFixture(
-            "Medical cabinet",
-            1.5, 3, 1.5,
-            x, 1.5, -6.5,
-            this.materials.green
         );
 
     }
 
+    // Beds
+    for (const x of [-5, 0, 5]) {
+
+        this.createBed(
+            x,
+            -1
+        );
+
+        // Bedside cabinet
+        this.createFixture(
+            "Bedside cabinet",
+            1,
+            1.2,
+            1,
+            x + 2,
+            0.6,
+            -1,
+            this.materials.wood
+        );
+
+    }
+
+    // Medical equipment
     this.createFixture(
-        "Medical equipment",
-        2, 1.5, 1,
-        0, 0.8, 3,
+        "Medical monitor",
+        1,
+        2,
+        0.7,
+        -7,
+        1,
+        -1,
         this.materials.metal
     );
 
-}
+    this.createFixture(
+        "Medical equipment",
+        2,
+        1.2,
+        1,
+        7,
+        0.6,
+        -1,
+        this.materials.metal
+    );
 
+    // Pharmacy corner
+    this.createCounter(
+        "Hospital pharmacy",
+        0,
+        5,
+        5,
+        this.materials.white
+    );
+
+    this.createNeonLight(
+        0,
+        4.3,
+        -7.7,
+        0x7fd6ff
+    );
+
+}
 createRestaurant() {
 
-    this.createFixture(
-        "Restaurant service counter",
-        12, 1.4, 2,
-        0, 0.8, -5,
+    // Service counter
+    this.createCounter(
+        "Restaurant cashier counter",
+        0,
+        -5,
+        10,
         this.materials.darkWood
     );
 
-    for (const x of [-5, 5]) {
+    // Kitchen/service area
+    this.createFixture(
+        "Kitchen counter",
+        5,
+        1.3,
+        4,
+        5,
+        0.8,
+        -3,
+        this.materials.metal
+    );
 
-        for (const z of [-1, 4]) {
+    this.createFixture(
+        "Kitchen fridge",
+        1.5,
+        3.5,
+        1.5,
+        7,
+        1.75,
+        -5,
+        this.materials.glass
+    );
 
-            this.createFixture(
-                "Dining table",
-                3, 0.3, 2,
-                x, 1.4, z,
-                this.materials.wood
+    // Dining tables
+    for (const x of [-5, 0, 5]) {
+
+        for (const z of [0, 4]) {
+
+            this.createSmallTable(
+                x,
+                z
+            );
+
+            this.createChair(
+                x - 1.5,
+                z
+            );
+
+            this.createChair(
+                x + 1.5,
+                z
             );
 
         }
 
     }
 
-    this.createFixture(
-        "Kitchen counter",
-        5, 1.4, 1.5,
-        5, 0.8, -3,
-        this.materials.metal
+    // Menu board
+    this.createWallDecor(
+        0,
+        3.2,
+        -7.75,
+        6,
+        1.5
+    );
+
+    // Plants
+    this.createPlant(-7, 5);
+    this.createPlant(7, 5);
+
+    // Lighting
+    this.createNeonLight(
+        0,
+        4.3,
+        -7.7,
+        0xffc857
     );
 
 }
 
 createSupermarket() {
 
-    this.createFixture(
-        "Checkout counter",
-        8, 1.3, 2,
-        0, 0.8, -6,
-        this.materials.wood
+    // Checkout
+    this.createCounter(
+        "Supermarket checkout",
+        0,
+        -6,
+        8
     );
 
-    // Shelving aisles
+    // Shelves
     for (const x of [-6, -2, 2, 6]) {
 
-        this.createFixture(
-            "Supermarket shelf",
-            1.2, 3, 6,
-            x, 1.5, 0,
-            this.materials.darkWood
+        this.createShelf(
+            x,
+            0,
+            1.2,
+            3,
+            5
+        );
+
+        this.createProductDisplay(
+            x,
+            -1.5
+        );
+
+        this.createProductDisplay(
+            x,
+            0
+        );
+
+        this.createProductDisplay(
+            x,
+            1.5
         );
 
     }
 
+    // Refrigerator section
     this.createFixture(
-        "Refrigerator",
-        2, 3.5, 2,
-        -6, 1.75, -5,
+        "Drinks refrigerator",
+        2,
+        3.5,
+        5,
+        -7,
+        1.75,
+        -5,
         this.materials.glass
     );
 
-}
+    // Basket area
+    this.createFixture(
+        "Shopping basket stand",
+        2,
+        1,
+        1.5,
+        7,
+        0.5,
+        -5,
+        this.materials.metal
+    );
 
+    // Store sign
+    this.createWallDecor(
+        0,
+        3.3,
+        -7.75,
+        6,
+        1
+    );
+
+}
 createBarberShop() {
 
     // Reception
@@ -557,40 +963,98 @@ createBarberShop() {
 
 createClothingStore() {
 
-    this.createFixture(
-        "Clothing counter",
-        6, 1.3, 1.5,
-        0, 0.8, -6,
-        this.materials.wood
+    // Checkout
+    this.createCounter(
+        "Clothing checkout",
+        0,
+        -6,
+        6
     );
 
+    // Clothing racks
     for (const x of [-6, 6]) {
 
         this.createFixture(
             "Clothing rack",
-            1.5, 2.5, 5,
-            x, 1.25, 0,
+            1.2,
+            2.5,
+            5,
+            x,
+            1.25,
+            0,
             this.materials.metal
         );
 
     }
 
+    // Display tables
     this.createFixture(
-        "Display table",
-        3, 1, 2,
-        0, 0.5, 2,
+        "Clothing display",
+        3,
+        1,
+        2,
+        -2,
+        0.5,
+        3,
         this.materials.darkWood
     );
 
     this.createFixture(
+        "Clothing display",
+        3,
+        1,
+        2,
+        2,
+        0.5,
+        3,
+        this.materials.darkWood
+    );
+
+    // Mirrors
+    this.createBox(
+        2.5,
+        3,
+        0.08,
+        this.materials.glass,
+        -5,
+        1.8,
+        -7.7
+    );
+
+    this.createBox(
+        2.5,
+        3,
+        0.08,
+        this.materials.glass,
+        5,
+        1.8,
+        -7.7
+    );
+
+    // Changing rooms
+    this.createFixture(
         "Changing room",
-        3, 3, 3,
-        5, 1.5, 4,
+        3,
+        3,
+        3,
+        5,
+        1.5,
+        4,
+        this.materials.fabric
+    );
+
+    this.createFixture(
+        "Changing room",
+        3,
+        3,
+        3,
+        -5,
+        1.5,
+        4,
         this.materials.fabric
     );
 
 }
-
 createPoliceStation() {
 
     this.createFixture(
@@ -626,43 +1090,85 @@ createPoliceStation() {
 
 createNightclub() {
 
-    this.createFixture(
+    // Bar
+    this.createCounter(
         "Nightclub bar",
-        10, 1.5, 2,
-        0, 0.8, -6,
+        0,
+        -6,
+        10,
         this.materials.darkWood
     );
 
+    // DJ booth
     this.createFixture(
         "DJ booth",
-        5, 1.5, 2,
-        0, 0.8, -2,
+        5,
+        1.5,
+        2,
+        0,
+        0.8,
+        -2,
         this.materials.metal
-    );
-
-    this.createFixture(
-        "VIP table",
-        3, 1, 2,
-        -6, 0.5, 3,
-        this.materials.wood
-    );
-
-    this.createFixture(
-        "VIP table",
-        3, 1, 2,
-        6, 0.5, 3,
-        this.materials.wood
     );
 
     // Dance floor
     this.createBox(
-        8, 0.12, 5,
+        9,
+        0.12,
+        6,
         this.materials.darkWood,
-        0, 0.1, 4
+        0,
+        0.08,
+        3
+    );
+
+    // VIP tables
+    this.createSmallTable(-6, 4);
+    this.createSmallTable(6, 4);
+
+    // Seating
+    this.createSofa(
+        -5,
+        1
+    );
+
+    this.createSofa(
+        5,
+        1
+    );
+
+    // DJ lighting
+    this.createNeonLight(
+        0,
+        3.5,
+        -2.7,
+        0xff247f
+    );
+
+    this.createNeonLight(
+        -6,
+        3.5,
+        0,
+        0x5c7cff
+    );
+
+    this.createNeonLight(
+        6,
+        3.5,
+        0,
+        0xff247f
+    );
+
+    // Club wall decoration
+    this.createWallDecor(
+        0,
+        3.2,
+        -7.75,
+        7,
+        1.5
     );
 
 }
-
 createPharmacy() {
 
     this.createFixture(
