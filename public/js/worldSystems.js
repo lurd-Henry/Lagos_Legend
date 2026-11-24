@@ -155,7 +155,7 @@ export class WorldSystems {
 
             sprite.position.set(
                 labelX,
-                labelY,
+                labelY - 3.5,
                 labelZ
             );
 
@@ -163,7 +163,7 @@ export class WorldSystems {
 
             sprite.position.set(
                 x,
-                y,
+                y - 3.5,
                 z
             );
 
