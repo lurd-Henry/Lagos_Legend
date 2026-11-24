@@ -26,8 +26,18 @@ this.savedFog = null;
 
         this.interiorCenter = new THREE.Vector3(1000, 0, 1000);
 
-        this.roomWidth = 18;
-        this.roomDepth = 16;
+        // =====================================
+// INTERIOR DIMENSIONS
+// =====================================
+
+this.roomWidth = 30;
+this.roomDepth = 26;
+
+// Player collision radius
+this.playerRadius = 0.45;
+
+// Comfortable multiplayer spacing
+this.interiorSpawnZ = 1008;
 
         this.createMaterials();
         this.createInteractionButton();
