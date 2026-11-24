@@ -1906,7 +1906,9 @@ enter(type, exteriorX, exteriorZ) {
 // =====================================
 
 exit() {
-
+    if (window.lagosBusinessMenu) {
+    window.lagosBusinessMenu.close();
+}
     if (!this.isInside) return;
 
     // Restore outdoor environment
